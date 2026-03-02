@@ -1,0 +1,34 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import AuthCard from "@/components/auth/AuthCard";
+import AuthTabs from "@/components/auth/AuthTabs";
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isLogin = pathname?.includes("/login");
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg, #f5f8ff 0%, #eef2f9 100%)",
+        padding: "24px 16px",
+      }}
+    >
+      <AuthCard
+        title="Du Lịch & Visa"
+        subtitle="Hệ thống quản lý dịch vụ du lịch toàn diện"
+        footerText={isLogin ? "New here?" : "Already have an account?"}
+        footerHref={isLogin ? "/register" : "/login"}
+        footerLinkText={isLogin ? "Create account" : "Sign in"}
+      >
+        <AuthTabs />
+        {children}
+      </AuthCard>
+    </div>
+  );
+}
