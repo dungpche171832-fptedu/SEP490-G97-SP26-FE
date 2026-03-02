@@ -1,24 +1,21 @@
-// "use client";
+"use client";
 
-// import { useEffect, useState } from "react";
-// import { useRouter } from "next/navigation";
-// import { getToken } from "@/lib/auth/auth.service";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getToken } from "@/lib/auth/auth.service";
 
-// type AuthGuardState = "checking" | "authorized" | "unauthorized";
+type AuthGuardState = "checking" | "authorized" | "unauthorized";
 
-// export function useAuthGuard(): AuthGuardState {
-//   const router = useRouter();
-//   const [state, setState] = useState<AuthGuardState>("checking");
+export function useAuthGuard(): AuthGuardState {
+  const router = useRouter();
+  const [state, setState] = useState<AuthGuardState>("checking");
 
-//   useEffect(() => {
-//     const token = getToken();
-//     if (!token) {
-//       setState("unauthorized");
-//       router.replace("/login");
-//       return;
-//     }
-//     setState("authorized");
-//   }, [router]);
+  useEffect(() => {
+    const token = getToken();
 
-//   return state;
-// }
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
+  return state;
+}

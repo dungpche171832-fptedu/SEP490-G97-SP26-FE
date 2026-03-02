@@ -1,13 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import AuthCard from "@/components/auth/AuthCard";
-import AuthTabs from "@/components/auth/AuthTabs";
+import AuthPage from "./login/page";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isLogin = pathname?.includes("/login");
-
   return (
     <div
       style={{
@@ -19,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         padding: "24px 16px",
       }}
     >
-      <AuthCard
+      {/* <AuthCard
         title="Du Lịch & Visa"
         subtitle="Hệ thống quản lý dịch vụ du lịch toàn diện"
         footerText={isLogin ? "New here?" : "Already have an account?"}
@@ -28,7 +23,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       >
         <AuthTabs />
         {children}
-      </AuthCard>
+      </AuthCard> */}
+      <AuthPage></AuthPage>
+      <div style={{ display: "none" }}>{children}</div>
     </div>
   );
 }
