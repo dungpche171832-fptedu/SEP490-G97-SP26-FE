@@ -14,8 +14,11 @@ export function useAuthGuard(): AuthGuardState {
     const token = getToken();
 
     if (!token) {
+      setTimeout(() => setState("unauthorized"), 0);
       router.replace("/login");
+      return;
     }
+    setTimeout(() => setState("authorized"), 0);
   }, [router]);
   return state;
 }

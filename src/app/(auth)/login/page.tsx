@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
+import { loginApi } from "@/lib/apiLogin";
+import { registerApi } from "@/lib/apiLogin";
+import { useRouter } from "next/navigation";
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
-
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 text-black">
       <div className="w-[600px] bg-white rounded-xl shadow-md overflow-hidden">
         {/* Banner */}
-        <div className="relative h-48 w-full">
-          <Image src="/images/bus.jpg" alt="Bus" fill className="object-cover" />
+        <div className="relative h-64 w-full">
+          <Image src="/images/bus.png" alt="Bus" fill className="object-cover" />
         </div>
 
         {/* Title */}
@@ -54,50 +55,159 @@ function Input({
   label,
   placeholder,
   type = "text",
+  value,
+  onChange,
 }: {
   label: string;
   placeholder: string;
   type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium mb-1">{label}</label>
+    <div className="mb-5">
+      <label className="block text-sm font-medium mb-2 text-gray-700">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={value}
+        onChange={onChange}
+        className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm 
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        transition-all duration-200"
       />
     </div>
   );
 }
 
 function LoginForm() {
-  return (
-    <>
-      <Input label="Email" placeholder="Nhập email của bạn" type="email" />
-      <Input label="Mật khẩu" placeholder="Nhập mật khẩu" type="password" />
+  const router = useRouter();
 
-      <button className="w-full bg-slate-900 text-white py-2 rounded-md mt-2 hover:bg-slate-800 transition">
-        Đăng nhập
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await loginApi({ email, password });
+
+      localStorage.setItem("token", data.accessToken);
+
+      router.push("/home");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Đăng nhập thất bại");
+      }
+
+      setPassword("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Input
+        label="Email"
+        placeholder="Nhập email của bạn"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <Input
+        label="Mật khẩu"
+        placeholder="Nhập mật khẩu"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-md border border-red-200">
+          {error}
+        </div>
+      )}
+
+      <button
+        onClick={handleLogin}
+        disabled={loading}
+        className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
+        text-white font-semibold py-2.5 rounded-lg
+        transition-all duration-200 active:scale-[0.98]
+        disabled:opacity-60"
+      >
+        {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
 
-      <div className="text-center mt-3 text-xs text-gray-400">Quên mật khẩu?</div>
-    </>
+      <div className="text-center text-sm text-gray-500 mt-3 hover:text-blue-600 cursor-pointer">
+        Quên mật khẩu?
+      </div>
+    </div>
   );
 }
 
 function RegisterForm() {
-  return (
-    <>
-      <Input label="Họ và tên" placeholder="Nhập họ và tên" />
-      <Input label="Tên đăng nhập" placeholder="Nhập tên đăng nhập" />
-      <Input label="Email" placeholder="Nhập email của bạn" type="email" />
-      <Input label="Số điện thoại" placeholder="Nhập số điện thoại" />
-      <Input label="Mật khẩu" placeholder="Nhập mật khẩu" type="password" />
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
 
-      <button className="w-full bg-slate-900 text-white py-2 rounded-md mt-2 hover:bg-slate-800 transition">
+  const handleRegister = async () => {
+    try {
+      await registerApi({ fullName, email, phone, password });
+      alert("Đăng ký thành công");
+    } catch {
+      alert("Đăng ký thất bại");
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Input
+        label="Họ và tên"
+        placeholder="Nhập họ và tên"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
+
+      <Input
+        label="Email"
+        placeholder="Nhập email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <Input
+        label="Số điện thoại"
+        placeholder="Nhập số điện thoại"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
+
+      <Input
+        label="Mật khẩu"
+        placeholder="Nhập mật khẩu"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <button
+        onClick={handleRegister}
+        className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
+        text-white font-semibold py-2.5 rounded-lg
+        transition-all duration-200 active:scale-[0.98]"
+      >
         Đăng ký
       </button>
-    </>
+    </div>
   );
 }
