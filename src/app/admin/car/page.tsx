@@ -202,8 +202,8 @@ export default function CarManagementPage() {
                                                     key={page}
                                                     onClick={() => setCurrentPage(page)}
                                                     className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm transition-all ${currentPage === page
-                                                            ? "bg-blue-600 text-white"
-                                                            : "hover:bg-slate-200 text-slate-600"
+                                                        ? "bg-blue-600 text-white"
+                                                        : "hover:bg-slate-200 text-slate-600"
                                                         }`}
                                                 >
                                                     {page}
