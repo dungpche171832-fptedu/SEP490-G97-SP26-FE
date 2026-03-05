@@ -139,7 +139,7 @@ function LoginForm() {
         onClick={handleLogin}
         disabled={loading}
         className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
-        text-white font-semibold py-2.5 rounded-lg
+        !text-white font-semibold py-2.5 rounded-lg
         transition-all duration-200 active:scale-[0.98]
         disabled:opacity-60"
       >
@@ -203,7 +203,7 @@ function RegisterForm() {
       <button
         onClick={handleRegister}
         className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
-        text-white font-semibold py-2.5 rounded-lg
+        !text-white font-semibold py-2.5 rounded-lg
         transition-all duration-200 active:scale-[0.98]"
       >
         Đăng ký
