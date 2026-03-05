@@ -114,7 +114,11 @@ export default function ProfilePage() {
                                 title={<span style={{ fontWeight: 700 }}>Thông tin cá nhân</span>}
                                 style={{ borderRadius: 14 }}
                                 extra={
-                                    <Button type="primary" disabled>
+                                    <Button
+                                        type="primary"
+                                        style={{ borderRadius: 8 }}
+                                        onClick={() => message.info("Chức năng đang phát triển")}
+                                    >
                                         Cập nhật thông tin
                                     </Button>
                                 }
@@ -154,34 +158,43 @@ export default function ProfilePage() {
                                     </span>
                                 }
                                 style={{ borderRadius: 14 }}
-                                extra={
-                                    <Button disabled type="default">
-                                        Đổi mật khẩu
-                                    </Button>
-                                }
                             >
                                 <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
                                     <div>
                                         <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
                                             Mật khẩu hiện tại
                                         </div>
-                                        <Input.Password placeholder="Nhập mật khẩu hiện tại" disabled />
+                                        <Input.Password
+                                            placeholder="Nhập mật khẩu hiện tại"
+                                            visibilityToggle={false}
+                                        />
                                     </div>
+
                                     <div>
                                         <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
                                             Mật khẩu mới
                                         </div>
-                                        <Input.Password placeholder="Nhập mật khẩu mới" disabled />
+                                        <Input.Password placeholder="Nhập mật khẩu mới" />
                                     </div>
+
                                     <div>
                                         <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
                                             Xác nhận mật khẩu mới
                                         </div>
-                                        <Input.Password placeholder="Xác nhận mật khẩu mới" disabled />
+                                        <Input.Password placeholder="Xác nhận mật khẩu mới" />
                                     </div>
 
-                                    <div style={{ marginTop: 6, color: "#9ca3af", fontSize: 12 }}>
-                                        * Chức năng đổi mật khẩu đang fix cứng (chưa có API).
+
+                                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+                                        <Button
+                                            type="default"
+                                            size="large"
+                                            style={{ borderRadius: 8 }}
+                                            icon={<img src="/icons/changepasswork.png" style={{ width: 14 }} />}
+                                            onClick={() => message.info("Chức năng đang phát triển")}
+                                        >
+                                            Đổi mật khẩu
+                                        </Button>
                                     </div>
                                 </div>
                             </Card>
