@@ -14,7 +14,7 @@ export default function AuthPage() {
         <div className="px-5 pt-5">
           <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-[#EAF2F8]">
             <Image
-              src="/images/bus.png"
+              src="/images/bus3.png"
               alt="Bus"
               fill
               priority

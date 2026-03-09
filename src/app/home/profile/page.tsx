@@ -40,26 +40,82 @@ export default function ProfilePage() {
     const email = useMemo(() => profile?.email || "", [profile]);
     const phone = useMemo(() => profile?.phone || "", [profile]);
 
+    const pageFont = 'var(--font-geist-sans), Arial, Helvetica, sans-serif';
+
+    const labelStyle: React.CSSProperties = {
+        fontSize: 13,
+        fontWeight: 700,
+        color: "#334155",
+        marginBottom: 6,
+        lineHeight: 1.4,
+        fontFamily: pageFont,
+    };
+
+    const inputStyle: React.CSSProperties = {
+        height: 42,
+        borderRadius: 8,
+        fontSize: 14,
+        color: "#0F172A",
+        fontFamily: pageFont,
+    };
+
+    const sectionTitleStyle: React.CSSProperties = {
+        fontWeight: 700,
+        fontSize: 16,
+        color: "#0F172A",
+        fontFamily: pageFont,
+    };
+
+    const buttonStyle: React.CSSProperties = {
+        borderRadius: 8,
+        minWidth: 170,
+        height: 38,
+        fontWeight: 700,
+        fontSize: 14,
+        fontFamily: pageFont,
+    };
+
     return (
-        <div style={{ minHeight: "100vh", background: "#f5f7fb" }}>
-            {/* ✅ Header  + Tabs nằm trong Header, lấy fullName từ API */}
+        <div
+            style={{
+                minHeight: "100vh",
+                background: "#f5f7fb",
+                fontFamily: pageFont,
+                color: "#0F172A",
+            }}
+        >
             <ProfileHeader fullName={fullName} subtitle="Khách hàng thân thiết" />
 
             <div style={{ maxWidth: 1100, margin: "0 auto", padding: "18px 18px 40px" }}>
-                {/* Title */}
                 <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: "#111827" }}>
+                    <div
+                        style={{
+                            fontSize: 26,
+                            fontWeight: 700,
+                            color: "#111827",
+                            fontFamily: pageFont,
+                        }}
+                    >
                         Hồ sơ cá nhân
                     </div>
-                    <div style={{ marginTop: 6, color: "#6b7280" }}>
+                    <div
+                        style={{
+                            marginTop: 6,
+                            color: "#6b7280",
+                            fontSize: 14,
+                            fontFamily: pageFont,
+                        }}
+                    >
                         Quản lý thông tin tài khoản và thiết lập bảo mật của bạn.
                     </div>
                 </div>
 
                 <Spin spinning={loading} tip="Đang tải...">
                     <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 18 }}>
-                        {/* Left card */}
-                        <Card style={{ borderRadius: 14 }}>
+                        <Card
+                            style={{ borderRadius: 14, fontFamily: pageFont }}
+                            styles={{ body: { fontFamily: pageFont } }}
+                        >
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                                 <div
                                     style={{
@@ -79,10 +135,26 @@ export default function ProfilePage() {
                                     />
                                 </div>
 
-                                <div style={{ marginTop: 14, fontSize: 18, fontWeight: 700 }}>
+                                <div
+                                    style={{
+                                        marginTop: 14,
+                                        fontSize: 18,
+                                        fontWeight: 700,
+                                        color: "#0F172A",
+                                        fontFamily: pageFont,
+                                    }}
+                                >
                                     {fullName || "—"}
                                 </div>
-                                <div style={{ marginTop: 4, color: "#6b7280", fontSize: 12 }}>
+                                <div
+                                    style={{
+                                        marginTop: 4,
+                                        color: "#64748B",
+                                        fontSize: 12,
+                                        fontWeight: 500,
+                                        fontFamily: pageFont,
+                                    }}
+                                >
                                     Thành viên từ 03/2026
                                 </div>
                             </div>
@@ -90,50 +162,43 @@ export default function ProfilePage() {
                             <Divider style={{ margin: "16px 0" }} />
 
                             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#374151" }}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#334155" }}>
                                     <MailOutlined style={{ color: "#2563eb" }} />
-                                    <span style={{ fontSize: 13 }}>{email || "—"}</span>
+                                    <span style={{ fontSize: 13, fontFamily: pageFont }}>{email || "—"}</span>
                                 </div>
 
-                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#374151" }}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#334155" }}>
                                     <PhoneOutlined style={{ color: "#2563eb" }} />
-                                    <span style={{ fontSize: 13 }}>{phone || "—"}</span>
+                                    <span style={{ fontSize: 13, fontFamily: pageFont }}>{phone || "—"}</span>
                                 </div>
 
-                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#374151" }}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "center", color: "#334155" }}>
                                     <SafetyCertificateOutlined style={{ color: "#2563eb" }} />
-                                    <span style={{ fontSize: 13 }}>Tài khoản đã xác thực</span>
+                                    <span style={{ fontSize: 13, fontFamily: pageFont }}>Tài khoản đã xác thực</span>
                                 </div>
                             </div>
                         </Card>
 
-                        {/* Right side */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                            {/* Personal info */}
                             <Card
-                                title={<span style={{ fontWeight: 700 }}>Thông tin cá nhân</span>}
-                                style={{ borderRadius: 14 }}
+                                title={<span style={sectionTitleStyle}>Thông tin cá nhân</span>}
+                                style={{ borderRadius: 14, fontFamily: pageFont }}
+                                styles={{ body: { fontFamily: pageFont } }}
                             >
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                                     <div style={{ gridColumn: "1 / span 2" }}>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Họ tên
-                                        </div>
-                                        <Input value={fullName} readOnly />
+                                        <div style={labelStyle}>Họ tên</div>
+                                        <Input value={fullName} readOnly style={inputStyle} />
                                     </div>
 
                                     <div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Email
-                                        </div>
-                                        <Input value={email} readOnly />
+                                        <div style={labelStyle}>Email</div>
+                                        <Input value={email} readOnly style={inputStyle} />
                                     </div>
 
                                     <div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Số điện thoại
-                                        </div>
-                                        <Input value={phone} readOnly />
+                                        <div style={labelStyle}>Số điện thoại</div>
+                                        <Input value={phone} readOnly style={inputStyle} />
                                     </div>
                                 </div>
 
@@ -141,11 +206,7 @@ export default function ProfilePage() {
                                     <Button
                                         type="primary"
                                         size="large"
-                                        style={{
-                                            borderRadius: 8,
-                                            minWidth: 170,
-                                            height: 38,
-                                        }}
+                                        style={buttonStyle}
                                         icon={
                                             <img
                                                 src="/icons/contacts.svg"
@@ -160,39 +221,40 @@ export default function ProfilePage() {
                                 </div>
                             </Card>
 
-                            {/* Change password  */}
                             <Card
                                 title={
-                                    <span style={{ fontWeight: 700 }}>
+                                    <span style={sectionTitleStyle}>
                                         <LockOutlined style={{ marginRight: 8 }} />
                                         Đổi mật khẩu
                                     </span>
                                 }
-                                style={{ borderRadius: 14 }}
+                                style={{ borderRadius: 14, fontFamily: pageFont }}
+                                styles={{ body: { fontFamily: pageFont } }}
                             >
                                 <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
                                     <div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Mật khẩu hiện tại
-                                        </div>
+                                        <div style={labelStyle}>Mật khẩu hiện tại</div>
                                         <Input.Password
                                             placeholder="Nhập mật khẩu hiện tại"
                                             visibilityToggle={false}
+                                            style={inputStyle}
                                         />
                                     </div>
 
                                     <div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Mật khẩu mới
-                                        </div>
-                                        <Input.Password placeholder="Nhập mật khẩu mới" />
+                                        <div style={labelStyle}>Mật khẩu mới</div>
+                                        <Input.Password
+                                            placeholder="Nhập mật khẩu mới"
+                                            style={inputStyle}
+                                        />
                                     </div>
 
                                     <div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-                                            Xác nhận mật khẩu mới
-                                        </div>
-                                        <Input.Password placeholder="Xác nhận mật khẩu mới" />
+                                        <div style={labelStyle}>Xác nhận mật khẩu mới</div>
+                                        <Input.Password
+                                            placeholder="Xác nhận mật khẩu mới"
+                                            style={inputStyle}
+                                        />
                                     </div>
                                 </div>
 
@@ -200,11 +262,7 @@ export default function ProfilePage() {
                                     <Button
                                         type="primary"
                                         size="large"
-                                        style={{
-                                            borderRadius: 8,
-                                            minWidth: 170,
-                                            height: 38,
-                                        }}
+                                        style={buttonStyle}
                                         icon={
                                             <img
                                                 src="/icons/changepasswork.png"
@@ -219,7 +277,16 @@ export default function ProfilePage() {
                                 </div>
                             </Card>
 
-                            <div style={{ textAlign: "center", color: "#9ca3af", fontSize: 12, marginTop: 6 }}>
+                            <div
+                                style={{
+                                    textAlign: "center",
+                                    color: "#94A3B8",
+                                    fontSize: 12,
+                                    marginTop: 6,
+                                    fontWeight: 500,
+                                    fontFamily: pageFont,
+                                }}
+                            >
                                 © 2024 Xe Limou Việt Trung. All rights reserved.
                             </div>
                         </div>
