@@ -113,15 +113,6 @@ export default function ProfilePage() {
                             <Card
                                 title={<span style={{ fontWeight: 700 }}>Thông tin cá nhân</span>}
                                 style={{ borderRadius: 14 }}
-                                extra={
-                                    <Button
-                                        type="primary"
-                                        style={{ borderRadius: 8 }}
-                                        onClick={() => message.info("Chức năng đang phát triển")}
-                                    >
-                                        Cập nhật thông tin
-                                    </Button>
-                                }
                             >
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                                     <div style={{ gridColumn: "1 / span 2" }}>
@@ -146,10 +137,30 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-
+                                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        style={{
+                                            borderRadius: 8,
+                                            minWidth: 170,
+                                            height: 38,
+                                        }}
+                                        icon={
+                                            <img
+                                                src="/icons/contacts.svg"
+                                                alt="icon"
+                                                style={{ width: 16 }}
+                                            />
+                                        }
+                                        onClick={() => message.info("Chức năng đang phát triển")}
+                                    >
+                                        Cập nhật thông tin
+                                    </Button>
+                                </div>
                             </Card>
 
-                            {/* Change password (fixed UI) */}
+                            {/* Change password  */}
                             <Card
                                 title={
                                     <span style={{ fontWeight: 700 }}>
@@ -183,19 +194,28 @@ export default function ProfilePage() {
                                         </div>
                                         <Input.Password placeholder="Xác nhận mật khẩu mới" />
                                     </div>
+                                </div>
 
-
-                                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-                                        <Button
-                                            type="default"
-                                            size="large"
-                                            style={{ borderRadius: 8 }}
-                                            icon={<img src="/icons/changepasswork.png" style={{ width: 14 }} />}
-                                            onClick={() => message.info("Chức năng đang phát triển")}
-                                        >
-                                            Đổi mật khẩu
-                                        </Button>
-                                    </div>
+                                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        style={{
+                                            borderRadius: 8,
+                                            minWidth: 170,
+                                            height: 38,
+                                        }}
+                                        icon={
+                                            <img
+                                                src="/icons/changepasswork.png"
+                                                alt="icon"
+                                                style={{ width: 15 }}
+                                            />
+                                        }
+                                        onClick={() => message.info("Chức năng đang phát triển")}
+                                    >
+                                        Đổi mật khẩu
+                                    </Button>
                                 </div>
                             </Card>
 

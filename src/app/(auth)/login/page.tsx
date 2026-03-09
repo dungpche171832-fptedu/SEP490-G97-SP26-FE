@@ -8,44 +8,62 @@ import { useRouter } from "next/navigation";
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 text-black">
-      <div className="w-[600px] bg-white rounded-xl shadow-md overflow-hidden">
+    <div className="min-h-[100vh] bg-[#F1F5F9] flex flex-col items-center justify-center p-4 text-black">
+      <div className="w-[420px] bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
         {/* Banner */}
-        <div className="relative h-64 w-full">
-          <Image src="/images/bus.png" alt="Bus" fill className="object-cover" />
+        <div className="px-5 pt-5">
+          <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-[#EAF2F8]">
+            <Image
+              src="/images/bus.png"
+              alt="Bus"
+              fill
+              priority
+              className="object-cover object-center"
+            />
+          </div>
         </div>
 
         {/* Title */}
-        <div className="text-center py-4 px-6">
-          <div className="flex items-center justify-center gap-2">
-            <Image src="/icons/busicon.svg" alt="Bus Icon" width={24} height={24} />
-            <h1 className="font-semibold text-lg ">Xe Limou Việt Trung</h1>
+        <div className="pt-6 pb-4 px-6 flex flex-col items-center">
+          <div className="flex items-center justify-center gap-2 h-10">
+            <Image
+              src="/icons/busicon1.svg"
+              alt="Bus Icon"
+              width={22}
+              height={22}
+              className="shrink-0"
+            />
+
+            <h1 className="text-[20px] font-bold leading-none text-[#0F172A] tracking-[-0.02em]">
+              Xe Limou Việt Trung
+            </h1>
           </div>
-          <p className="text-sm text-gray-500">Hệ thống quản lý dịch vụ vận chuyển</p>
+
+          <p className="mt-1.5 text-center text-[13px] font-medium text-[#64748B]">
+            Hệ thống quản lý dịch vụ vận chuyển
+          </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b text-sm font-medium">
+        <div className="flex border-b border-gray-200 text-[14px] font-bold px-4 mx-2">
           <button
             onClick={() => setTab("login")}
-            className={`flex-1 py-2 ${
-              tab === "login" ? "border-b-2 border-black text-black" : "text-gray-400"
-            }`}
+            className={`flex-1 py-3 transition-colors ${tab === "login" ? "border-b-[2px] border-[#0F172A] text-[#0F172A]" : "text-[#64748B] hover:text-[#334155]"
+              }`}
           >
             Đăng nhập
           </button>
           <button
             onClick={() => setTab("register")}
-            className={`flex-1 py-2 ${
-              tab === "register" ? "border-b-2 border-black text-black" : "text-gray-400"
-            }`}
+            className={`flex-1 py-3 transition-colors ${tab === "register" ? "border-b-[2px] border-[#0F172A] text-[#0F172A]" : "text-[#64748B] hover:text-[#334155]"
+              }`}
           >
             Đăng ký
           </button>
         </div>
 
         {/* Form */}
-        <div className="p-6">{tab === "login" ? <LoginForm /> : <RegisterForm />}</div>
+        <div className="p-8 pb-10">{tab === "login" ? <LoginForm /> : <RegisterForm />}</div>
       </div>
     </div>
   );
@@ -65,15 +83,15 @@ function Input({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <div className="mb-5">
-      <label className="block text-sm font-medium mb-2 text-gray-700">{label}</label>
+    <div className="mb-4">
+      <label className="block text-[13px] font-bold mb-1.5 text-[#334155]">{label}</label>
       <input
         type={type}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm 
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        className="w-full rounded-lg border border-[#CBD5E1] px-3.5 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A]
+        focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A]
         transition-all duration-200"
       />
     </div>
@@ -138,15 +156,15 @@ function LoginForm() {
       <button
         onClick={handleLogin}
         disabled={loading}
-        className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
-        !text-white font-semibold py-2.5 rounded-lg
+        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
+        !text-white font-bold text-[14px] py-3 rounded-lg
         transition-all duration-200 active:scale-[0.98]
-        disabled:opacity-60"
+        disabled:opacity-60 shadow-sm"
       >
         {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
 
-      <div className="text-center text-sm text-gray-500 mt-3 hover:text-blue-600 cursor-pointer">
+      <div className="text-center text-[12.5px] font-medium text-[#94A3B8] mt-5 hover:text-[#0F172A] cursor-pointer transition-colors">
         Quên mật khẩu?
       </div>
     </div>
@@ -202,9 +220,9 @@ function RegisterForm() {
 
       <button
         onClick={handleRegister}
-        className="w-full mt-2 bg-blue-600 hover:bg-blue-700 
-        !text-white font-semibold py-2.5 rounded-lg
-        transition-all duration-200 active:scale-[0.98]"
+        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
+        !text-white font-bold text-[14px] py-3 rounded-lg
+        transition-all duration-200 active:scale-[0.98] shadow-sm"
       >
         Đăng ký
       </button>

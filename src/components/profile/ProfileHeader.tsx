@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 type Props = {
     fullName?: string;
-    subtitle?: string; // ví dụ: "Khách hàng thân thiết"
+    subtitle?: string;
 };
 
 export default function ProfileHeader({ fullName, subtitle = "Khách hàng thân thiết" }: Props) {
@@ -35,11 +35,12 @@ export default function ProfileHeader({ fullName, subtitle = "Khách hàng thân
                     <div className="font-semibold text-gray-900">Xe Limou Việt Trung</div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <div className="text-right leading-tight">
                         <div className="font-semibold text-gray-900">{fullName || "—"}</div>
                         <div className="text-xs text-gray-500">{subtitle}</div>
                     </div>
+
                     <img
                         src="/images/image.png"
                         alt="avatar"
@@ -47,7 +48,20 @@ export default function ProfileHeader({ fullName, subtitle = "Khách hàng thân
                             width: 36,
                             height: 36,
                             borderRadius: "50%",
-                            objectFit: "cover"
+                            objectFit: "cover",
+                        }}
+                    />
+
+                    <img
+                        src="/icons/logout.svg"
+                        alt="logout"
+                        style={{
+                            width: 18,
+                            height: 18,
+                            cursor: "pointer",
+                        }}
+                        onClick={() => {
+                            alert("Chức năng logout chưa được hỗ trợ");
                         }}
                     />
                 </div>
@@ -64,7 +78,9 @@ export default function ProfileHeader({ fullName, subtitle = "Khách hàng thân
                                 href={t.href}
                                 className={[
                                     "py-3 text-sm",
-                                    active ? "text-blue-600 font-semibold border-b-2 border-blue-600" : "text-gray-500",
+                                    active
+                                        ? "text-blue-600 font-semibold border-b-2 border-blue-600"
+                                        : "text-gray-500",
                                 ].join(" ")}
                             >
                                 {t.label}
