@@ -1,7 +1,7 @@
 import type { AuthResponse, LoginPayload, RegisterPayload } from "./auth.types";
 import { login as loginRequest, register as registerRequest } from "./auth.api";
 
-const TOKEN_KEY = "auth_token";
+const TOKEN_KEY = "token";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
