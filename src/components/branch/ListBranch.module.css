@@ -1,0 +1,111 @@
+.container {
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.headerLeft h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+}
+
+.headerLeft p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4a90e2;
+  border-color: #4a90e2;
+  border-radius: 8px;
+  font-weight: 500;
+  height: 40px;
+  padding: 0 20px;
+}
+
+.addButton:hover {
+  background: #357abd !important;
+  border-color: #357abd !important;
+}
+
+.tableWrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.statusActive {
+  background: #d1fae5;
+  color: #065f46;
+  border: none;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+}
+
+.statusInactive {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+}
+
+.actionBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.actionBtn:hover {
+  color: #4a90e2;
+  background: #f0f7ff;
+}
+
+.actionBtnDelete:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.branchCode {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.branchName {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 14px;
+}
