@@ -5,17 +5,20 @@ import { Table, Button, Spin, Alert, Pagination } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
   EditOutlined,
+  EyeOutlined,
   PoweroffOutlined,
   CheckCircleOutlined,
   PlusCircleOutlined,
 } from "@ant-design/icons";
 import type { Branch } from "@/lib/branch/branch.types";
 import { getAllBranches } from "@/lib/branch/branch.service";
+import { useRouter } from "next/navigation";
 import styles from "@/app/admin/branch/ListBranch.module.css";
 
 const PAGE_SIZE = 4;
 
 export default function ListBranch() {
+  const router = useRouter();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +110,13 @@ export default function ListBranch() {
       width: 90,
       render: (_: unknown, record: Branch) => (
         <div style={{ display: "flex", gap: 4 }}>
+          <button
+            className={styles.actionBtn}
+            title="Xem chi tiết"
+            onClick={() => router.push(`/admin/branch/${record.id}`)}
+          >
+            <EyeOutlined />
+          </button>
           <button className={styles.actionBtn} title="Chỉnh sửa">
             <EditOutlined />
           </button>
