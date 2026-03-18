@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, Button, Tag, Spin, Alert, Pagination } from "antd";
+import { Table, Button, Spin, Alert, Pagination } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, DeleteOutlined, PlusCircleOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  PoweroffOutlined,
+  CheckCircleOutlined,
+  PlusCircleOutlined,
+} from "@ant-design/icons";
 import type { Branch } from "@/lib/branch/branch.types";
 import { getAllBranches } from "@/lib/branch/branch.service";
-import styles from "./ListBranch.module.css";
+import styles from "@/app/admin/branch/ListBranch.module.css";
 
 const PAGE_SIZE = 4;
 
@@ -100,14 +105,20 @@ export default function ListBranch() {
       title: "THAO TÁC",
       key: "action",
       width: 90,
-      render: () => (
+      render: (_: unknown, record: Branch) => (
         <div style={{ display: "flex", gap: 4 }}>
           <button className={styles.actionBtn} title="Chỉnh sửa">
             <EditOutlined />
           </button>
-          <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} title="Xóa">
-            <DeleteOutlined />
-          </button>
+          {record.isActive ? (
+            <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} title="Tắt">
+              <PoweroffOutlined />
+            </button>
+          ) : (
+            <button className={`${styles.actionBtn} ${styles.actionBtnActive}`} title="Bật">
+              <CheckCircleOutlined />
+            </button>
+          )}
         </div>
       ),
     },

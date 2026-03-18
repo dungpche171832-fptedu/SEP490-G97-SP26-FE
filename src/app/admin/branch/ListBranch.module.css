@@ -86,6 +86,11 @@
   background: #fef2f2;
 }
 
+.actionBtnActive:hover {
+  color: #10b981;
+  background: #d1fae5;
+}
+
 .pagination {
   display: flex;
   align-items: center;
