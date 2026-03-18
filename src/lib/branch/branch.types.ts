@@ -13,6 +13,14 @@ export type Branch = {
   email: string;
   isActive: boolean;
   managerAccount: BranchManagerAccount | null;
+  // Detail fields (optional as they might only be returned in detail API)
+  province?: string;
+  ward?: string;
+  detailedAddress?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: BranchManagerAccount | null;
+  updatedBy?: BranchManagerAccount | null;
 };
 
 export type BranchListResponse = {
