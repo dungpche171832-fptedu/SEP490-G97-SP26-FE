@@ -142,11 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
-              <input
-                type="text"
-                placeholder="Tìm kiếm nhân viên..."
-                className={styles.searchInput}
-              />
+              <input type="text" placeholder="Tìm kiếm..." className={styles.searchInput} />
             </div>
 
             <div className={styles.headerRight}>
