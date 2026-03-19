@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Spin, Alert } from "antd";
 import {
   InfoCircleOutlined,
@@ -18,6 +19,7 @@ interface BranchDetailProps {
 }
 
 export default function BranchDetail({ id }: BranchDetailProps) {
+  const router = useRouter();
   const [branch, setBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function BranchDetail({ id }: BranchDetailProps) {
         setLoading(true);
         const data = await getBranchById(id);
         setBranch(data);
-      } catch (err) {
+      } catch {
         setError("Không thể tải thông tin chi nhánh. Vui lòng thử lại.");
       } finally {
         setLoading(false);
@@ -202,7 +204,10 @@ export default function BranchDetail({ id }: BranchDetailProps) {
       </div>
 
       <div className={styles.actionRow}>
-        <button className={styles.editButton}>
+        <button
+          className={styles.editButton}
+          onClick={() => router.push(`/admin/branch/${id}/edit`)}
+        >
           Chỉnh sửa <EditOutlined />
         </button>
       </div>

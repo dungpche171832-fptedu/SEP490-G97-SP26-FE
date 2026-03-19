@@ -3,6 +3,7 @@ import type {
   BranchListResponse,
   Branch,
   CreateBranchPayload,
+  UpdateBranchPayload,
   BranchManagerAccount,
 } from "./branch.types";
 
@@ -34,6 +35,15 @@ export async function fetchAllBranches(): Promise<BranchListResponse> {
 export async function createBranch(payload: CreateBranchPayload): Promise<Branch> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await branchClient.post<any>("/branches", payload);
+  return data;
+}
+
+export async function updateBranch(
+  id: number | string,
+  payload: UpdateBranchPayload,
+): Promise<Branch> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await branchClient.put<any>(`/branches/${id}`, payload);
   return data;
 }
 

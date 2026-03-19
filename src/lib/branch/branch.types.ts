@@ -40,3 +40,5 @@ export type CreateBranchPayload = {
   managerId?: number | null;
   isActive: boolean;
 };
+
+export type UpdateBranchPayload = Partial<CreateBranchPayload>;

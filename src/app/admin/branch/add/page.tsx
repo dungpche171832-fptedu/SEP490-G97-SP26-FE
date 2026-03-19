@@ -1,5 +1,5 @@
-import AddBranch from "@/components/branch/AddBranch";
+import BranchForm from "@/components/branch/BranchForm";
 
 export default function AddBranchPage() {
-  return <AddBranch />;
+  return <BranchForm mode="add" />;
 }

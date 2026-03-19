@@ -117,7 +117,11 @@ export default function ListBranch() {
           >
             <EyeOutlined />
           </button>
-          <button className={styles.actionBtn} title="Chỉnh sửa">
+          <button
+            className={styles.actionBtn}
+            title="Chỉnh sửa"
+            onClick={() => router.push(`/admin/branch/${record.id}/edit`)}
+          >
             <EditOutlined />
           </button>
           {record.isActive ? (
