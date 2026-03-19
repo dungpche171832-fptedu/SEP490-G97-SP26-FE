@@ -1,5 +1,10 @@
 import axios from "axios";
-import type { BranchListResponse } from "./branch.types";
+import type {
+  BranchListResponse,
+  Branch,
+  CreateBranchPayload,
+  BranchManagerAccount,
+} from "./branch.types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,4 +29,24 @@ branchClient.interceptors.request.use((config) => {
 export async function fetchAllBranches(): Promise<BranchListResponse> {
   const { data } = await branchClient.get<BranchListResponse>("/branches");
   return data;
+}
+
+export async function createBranch(payload: CreateBranchPayload): Promise<Branch> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await branchClient.post<any>("/branches", payload);
+  return data;
+}
+
+export async function fetchManagers(searchTerm?: string): Promise<BranchManagerAccount[]> {
+  try {
+    const searchParam = searchTerm
+      ? `?role=manager&search=${encodeURIComponent(searchTerm)}`
+      : "?role=manager";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await branchClient.get<any>(`/users${searchParam}`);
+    return data.users || data.data || data || [];
+  } catch (error) {
+    console.error("Failed to fetch managers", error);
+    return [];
+  }
 }

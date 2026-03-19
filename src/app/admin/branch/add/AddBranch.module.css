@@ -1,0 +1,126 @@
+.container {
+  padding: 24px;
+  background-color: #f3f4f6;
+  min-height: calc(100vh - 64px);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cardIcon {
+  color: #3b82f6;
+  font-size: 18px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+/* Grid spacing for forms */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 0px;
+  column-gap: 24px;
+}
+
+.fullWidth {
+  grid-column: span 2;
+}
+
+/* Style label slightly bold and dark */
+.formLabel {
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 8px;
+  display: inline-block;
+  font-size: 14px;
+}
+
+/* Helper text */
+.helperText {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Action row at bottom */
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.btnCancel {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  min-width: 100px;
+}
+
+.btnCancel:hover {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+.btnSubmit {
+  background-color: #1890ff;
+  border: none;
+  min-width: 140px;
+}
+
+.switchWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.switchLabel {
+  display: flex;
+  flex-direction: column;
+}
+
+.switchTitle {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.switchDesc {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}

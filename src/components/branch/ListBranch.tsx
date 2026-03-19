@@ -147,6 +147,7 @@ export default function ListBranch() {
           icon={<PlusCircleOutlined />}
           className={styles.addButton}
           style={{ background: "#4a90e2", borderColor: "#4a90e2" }}
+          onClick={() => router.push("/admin/branch/add")}
         >
           Thêm chi nhánh
         </Button>

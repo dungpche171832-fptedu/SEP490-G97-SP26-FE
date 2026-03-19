@@ -28,3 +28,15 @@ export type BranchListResponse = {
   message: string;
   totalCount: number;
 };
+
+export type CreateBranchPayload = {
+  code: string;
+  name: string;
+  phone: string;
+  email: string;
+  province?: string;
+  ward?: string;
+  detailedAddress?: string;
+  managerId?: number | null;
+  isActive: boolean;
+};
