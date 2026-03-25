@@ -27,8 +27,12 @@ branchClient.interceptors.request.use((config) => {
   return config;
 });
 
-export async function fetchAllBranches(): Promise<BranchListResponse> {
-  const { data } = await branchClient.get<BranchListResponse>("/branches");
+export async function fetchAllBranches(code?: string, name?: string): Promise<BranchListResponse> {
+  const params = new URLSearchParams();
+  if (code) params.append("code", code);
+  if (name) params.append("name", name);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const { data } = await branchClient.get<BranchListResponse>(`/branches${query}`);
   return data;
 }
 
@@ -49,12 +53,15 @@ export async function updateBranch(
 
 export async function fetchManagers(searchTerm?: string): Promise<BranchManagerAccount[]> {
   try {
-    const searchParam = searchTerm
-      ? `?role=manager&search=${encodeURIComponent(searchTerm)}`
-      : "?role=manager";
+    const searchParam = searchTerm ? `?email=${encodeURIComponent(searchTerm)}` : "";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await branchClient.get<any>(`/users${searchParam}`);
-    return data.users || data.data || data || [];
+    const { data } = await branchClient.get<any>(`/account${searchParam}`);
+    const accounts = data.accounts || data.data || data || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return accounts.map((acc: any) => ({
+      ...acc,
+      id: acc.id || acc.accountId,
+    }));
   } catch (error) {
     console.error("Failed to fetch managers", error);
     return [];

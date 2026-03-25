@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, Button, Spin, Alert, Pagination } from "antd";
+import { Table, Button, Spin, Alert, Pagination, Input } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
   EditOutlined,
@@ -24,20 +24,29 @@ export default function ListBranch() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [searchCode, setSearchCode] = useState("");
+  const [searchName, setSearchName] = useState("");
+
+  const loadBranches = async (code: string = "", name: string = "") => {
+    try {
+      setLoading(true);
+      const data = await getAllBranches(code, name);
+      setBranches(data);
+      setCurrentPage(1); // Reset to page 1 on new search
+    } catch {
+      setError("Không thể tải danh sách chi nhánh. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllBranches();
-        setBranches(data);
-      } catch {
-        setError("Không thể tải danh sách chi nhánh. Vui lòng thử lại.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadBranches();
   }, []);
+
+  const handleSearch = () => {
+    loadBranches(searchCode.trim(), searchName.trim());
+  };
 
   const totalBranches = branches.length;
   const startIndex = (currentPage - 1) * PAGE_SIZE + 1;
@@ -154,6 +163,29 @@ export default function ListBranch() {
           onClick={() => router.push("/admin/branch/add")}
         >
           Thêm chi nhánh
+        </Button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        <Input
+          placeholder="Tìm theo mã chi nhánh..."
+          value={searchCode}
+          onChange={(e) => setSearchCode(e.target.value)}
+          onPressEnter={handleSearch}
+          style={{ width: 200 }}
+          allowClear
+        />
+        <Input
+          placeholder="Tìm theo tên chi nhánh..."
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          onPressEnter={handleSearch}
+          style={{ width: 250 }}
+          allowClear
+        />
+        <Button type="primary" onClick={handleSearch}>
+          Tìm kiếm
         </Button>
       </div>
 

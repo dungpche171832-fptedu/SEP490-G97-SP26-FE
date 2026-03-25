@@ -67,7 +67,8 @@ export default function BranchForm({ mode, branchId }: BranchFormProps) {
             province: data.province,
             ward: data.ward,
             detailedAddress: data.detailedAddress || data.address,
-            managerId: data.managerAccount?.id || null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            managerId: data.managerAccount?.id || (data.managerAccount as any)?.accountId || null,
             isActive: data.isActive,
           });
 
@@ -113,29 +114,31 @@ export default function BranchForm({ mode, branchId }: BranchFormProps) {
       setSubmitting(true);
 
       if (mode === "add") {
+        const addressParts = [values.detailedAddress, values.ward, values.province].filter(Boolean);
+        const fullAddress = addressParts.join(", ");
+
         const payload: CreateBranchPayload = {
           code: values.code,
           name: values.name,
           phone: values.phone,
           email: values.email,
-          province: values.province,
-          ward: values.ward,
-          detailedAddress: values.detailedAddress,
-          managerId: values.managerId || null,
+          address: fullAddress,
+          managerAccountId: values.managerId || null,
           isActive: values.isActive ?? true,
         };
         await createBranch(payload);
         message.success("Thêm chi nhánh thành công!");
       } else {
+        const addressParts = [values.detailedAddress, values.ward, values.province].filter(Boolean);
+        const fullAddress = addressParts.join(", ");
+
         const payload: UpdateBranchPayload = {
           code: values.code,
           name: values.name,
           phone: values.phone,
           email: values.email,
-          province: values.province,
-          ward: values.ward,
-          detailedAddress: values.detailedAddress,
-          managerId: values.managerId || null,
+          address: fullAddress,
+          managerAccountId: values.managerId || null,
           isActive: values.isActive ?? true,
         };
         if (branchId) {
