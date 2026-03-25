@@ -34,10 +34,8 @@ export type CreateBranchPayload = {
   name: string;
   phone: string;
   email: string;
-  province?: string;
-  ward?: string;
-  detailedAddress?: string;
-  managerId?: number | null;
+  address: string;
+  managerAccountId?: number | null;
   isActive: boolean;
 };
 

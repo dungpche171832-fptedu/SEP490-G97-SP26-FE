@@ -11,8 +11,8 @@ import type {
   BranchManagerAccount,
 } from "./branch.types";
 
-export async function getAllBranches(): Promise<Branch[]> {
-  const response = await fetchAllBranches();
+export async function getAllBranches(code?: string, name?: string): Promise<Branch[]> {
+  const response = await fetchAllBranches(code, name);
   return response.branches ?? [];
 }
 
