@@ -48,15 +48,21 @@ export default function AuthPage() {
         <div className="flex border-b border-gray-200 text-[14px] font-bold px-4 mx-2">
           <button
             onClick={() => setTab("login")}
-            className={`flex-1 py-3 transition-colors ${tab === "login" ? "border-b-[2px] border-[#0F172A] text-[#0F172A]" : "text-[#64748B] hover:text-[#334155]"
-              }`}
+            className={`flex-1 py-3 transition-colors ${
+              tab === "login"
+                ? "border-b-[2px] border-[#0F172A] text-[#0F172A]"
+                : "text-[#64748B] hover:text-[#334155]"
+            }`}
           >
             Đăng nhập
           </button>
           <button
             onClick={() => setTab("register")}
-            className={`flex-1 py-3 transition-colors ${tab === "register" ? "border-b-[2px] border-[#0F172A] text-[#0F172A]" : "text-[#64748B] hover:text-[#334155]"
-              }`}
+            className={`flex-1 py-3 transition-colors ${
+              tab === "register"
+                ? "border-b-[2px] border-[#0F172A] text-[#0F172A]"
+                : "text-[#64748B] hover:text-[#334155]"
+            }`}
           >
             Đăng ký
           </button>
@@ -90,7 +96,7 @@ function Input({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full rounded-lg border border-[#CBD5E1] px-3.5 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A]
+        className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A]
         focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A]
         transition-all duration-200"
       />
