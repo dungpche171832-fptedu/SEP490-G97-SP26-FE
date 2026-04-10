@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getEmployees, deleteEmployee } from "@/services/employee.service";
-import { Pencil, Trash2 } from "lucide-react";
+// import { Pencil, Trash2 } from "lucide-react";
 
 interface Employee {
   id: number;
@@ -97,14 +97,14 @@ export default function EmployeeTable() {
                   onClick={() => handleEdit(emp)}
                   className="text-blue-500 hover:text-blue-700 transition"
                 >
-                  <Pencil size={18} />
+                  {/* <Pencil size={18} /> */}
                 </button>
 
                 <button
                   onClick={() => handleDelete(emp.id)}
                   className="text-red-500 hover:text-red-700 transition"
                 >
-                  <Trash2 size={18} />
+                  {/* <Trash2 size={18} /> */}
                 </button>
               </td>
             </tr>

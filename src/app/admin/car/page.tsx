@@ -43,11 +43,7 @@ export default function CarManagementPage() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans">
-      <Sidebar />
-
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
-        <Header />
-
         {/* Content */}
         <div className="p-8 h-full overflow-y-auto">
           {/* Header Section */}

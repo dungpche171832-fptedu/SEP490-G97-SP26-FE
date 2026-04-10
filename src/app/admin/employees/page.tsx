@@ -5,11 +5,7 @@ import EmployeeTable from "@/components/listEployee/EmployeeTable";
 export default function EmployeesPage() {
   return (
     <div className="flex bg-gray-100 min-h-screen">
-      <Sidebar />
-
       <div className="flex-1">
-        <Header />
-
         <div className="p-8">
           <div className="flex justify-between items-center">
             <div>
