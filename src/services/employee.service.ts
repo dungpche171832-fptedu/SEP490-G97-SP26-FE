@@ -14,6 +14,20 @@ export const getEmployees = async (page = 1) => {
   return res.json();
 };
 
+export const getEmployeeById = async (id: number) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`http://localhost:8080/api/employees/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch employee");
+
+  return res.json();
+};
+
 export const createEmployee = async (data: EmployeeForm) => {
   const token = localStorage.getItem("token");
 
