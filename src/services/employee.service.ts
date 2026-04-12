@@ -14,6 +14,23 @@ export const getEmployees = async (page = 1) => {
   return res.json();
 };
 
+export const createEmployee = async (data: EmployeeForm) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Failed to create employee");
+
+  return res.json();
+};
+
 export const deleteEmployee = async (id: number) => {
   const token = localStorage.getItem("token");
 
@@ -24,3 +41,11 @@ export const deleteEmployee = async (id: number) => {
     },
   });
 };
+
+interface EmployeeForm {
+  fullName: string;
+  email: string;
+  password: string;
+  role: string;
+  branchId: number;
+}
