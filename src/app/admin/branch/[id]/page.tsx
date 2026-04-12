@@ -21,7 +21,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, type BranchViewResponse } from "@/services/branch.service";
 
 // ============================================================================
-// 1. ĐỊNH NGHĨA COMPONENT CON BÊN NGOÀI (Để fix lỗi static-components)
+// 1. INFO FIELD COMPONENT (Đã FIX lỗi lệch icon và text)
 // ============================================================================
 interface InfoFieldProps {
   label: string;
@@ -32,16 +32,20 @@ interface InfoFieldProps {
 
 const InfoField = ({ label, value, icon, isBold = false }: InfoFieldProps) => (
   <div className="flex flex-col gap-2">
-    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none">
       {label}
     </label>
-    <div className="flex items-center gap-3 min-h-[24px]">
-      <span className="text-[#1677FF] text-base flex items-center justify-center w-5">{icon}</span>
-      <p
-        className={`${isBold ? "font-black text-slate-800 text-base" : "font-bold text-slate-700 text-sm"} truncate`}
+    <div className="flex items-center gap-2.5">
+      {/* Ép icon không có line-height và fix cứng kích thước */}
+      <div className="text-[#1677FF] text-[16px] flex items-center justify-center leading-none">
+        {icon}
+      </div>
+      {/* Triệt tiêu line-height của text và đẩy nhẹ xuống 2px để thẳng tâm với icon */}
+      <div
+        className={`${isBold ? "font-black text-slate-800 text-[15px]" : "font-bold text-slate-700 text-[14px]"} leading-none mt-[2px] truncate`}
       >
         {value || "—"}
-      </p>
+      </div>
     </div>
   </div>
 );
@@ -109,21 +113,21 @@ export default function BranchViewPage() {
             <div className="bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
               <div className="px-8 py-5 border-b border-slate-50 flex justify-between items-center bg-white">
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
-                    <InfoCircleOutlined className="text-[#1677FF] text-lg" />
+                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
+                    <InfoCircleOutlined className="text-[#1677FF] text-lg leading-none" />
                   </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight">
+                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">
                     Thông tin cơ bản
                   </h3>
                 </div>
                 <span className="flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider bg-[#D1FAE5] text-[#059669]">
-                  <CheckCircleFilled className="text-[10px]" />
+                  <CheckCircleFilled className="text-[10px] leading-none" />
                   Đang hoạt động
                 </span>
               </div>
 
               <div className="p-10">
-                <div className="grid grid-cols-3 gap-x-12 gap-y-10">
+                <div className="grid grid-cols-3 gap-x-12 gap-y-10 items-start">
                   <InfoField
                     label="Mã chi nhánh"
                     value={branch.code}
@@ -137,19 +141,20 @@ export default function BranchViewPage() {
                     icon={<InfoCircleOutlined />}
                   />
 
+                  {/* Khối quản lý căn chỉnh lại label cho bằng với các label khác */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none">
                       Quản lý chi nhánh
                     </label>
                     <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full max-w-[240px]">
-                      <div className="w-10 h-10 rounded-full bg-[#1677FF] flex items-center justify-center text-white text-base font-black shadow-lg shadow-blue-100">
+                      <div className="w-10 h-10 rounded-full bg-[#1677FF] flex items-center justify-center text-white text-base font-black shadow-lg shadow-blue-100 shrink-0">
                         {branch.managerName?.charAt(0)}
                       </div>
-                      <div className="truncate">
-                        <p className="font-black text-slate-800 text-sm truncate">
+                      <div className="truncate flex flex-col justify-center gap-1">
+                        <p className="font-black text-slate-800 text-[14px] leading-none truncate">
                           {branch.managerName}
                         </p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">
+                        <p className="text-[10px] text-slate-500 font-bold uppercase leading-none">
                           Quản lý cấp cao
                         </p>
                       </div>
@@ -166,20 +171,20 @@ export default function BranchViewPage() {
             <div className="grid grid-cols-12 gap-6 items-stretch">
               <div className="col-span-12 lg:col-span-7 bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
-                    <EnvironmentOutlined className="text-[#1677FF] text-lg" />
+                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
+                    <EnvironmentOutlined className="text-[#1677FF] text-lg leading-none" />
                   </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight">Địa chỉ</h3>
+                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">Địa chỉ</h3>
                 </div>
                 <div className="p-10 grid grid-cols-2 gap-10">
                   <InfoField label="Tỉnh/Thành phố" value="Hà Nội" icon={<EnvironmentOutlined />} />
                   <InfoField label="Phường/Xã" value="Hoàng Mai" icon={<EnvironmentOutlined />} />
                   <div className="col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-3 leading-none">
                       Địa chỉ chi tiết
                     </label>
                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                      <p className="text-slate-800 font-bold text-base leading-relaxed">
+                      <p className="text-slate-800 font-bold text-[15px] leading-relaxed">
                         {branch.address}
                       </p>
                     </div>
@@ -189,17 +194,19 @@ export default function BranchViewPage() {
 
               <div className="col-span-12 lg:col-span-5 bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
                 <div className="px-8 py-5 border-b border-slate-50 flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
-                    <SettingOutlined className="text-[#1677FF] text-lg" />
+                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
+                    <SettingOutlined className="text-[#1677FF] text-lg leading-none" />
                   </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight">Hệ thống</h3>
+                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">
+                    Hệ thống
+                  </h3>
                 </div>
                 <div className="p-10 space-y-8">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-3 leading-none">
                       ID Chi nhánh (UUID)
                     </label>
-                    <code className="text-[11px] font-mono font-bold text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 block break-all">
+                    <code className="text-[11px] font-mono font-bold text-slate-500 bg-slate-50 p-3.5 rounded-xl border border-slate-100 block break-all leading-none">
                       {mockUUID}
                     </code>
                   </div>
@@ -214,7 +221,7 @@ export default function BranchViewPage() {
                     <InfoField label="Người cập nhật" value="Admin" icon={<UserOutlined />} />
                   </div>
                   <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-3 items-start">
-                    <InfoCircleOutlined className="text-[#1677FF] text-sm mt-0.5" />
+                    <InfoCircleOutlined className="text-[#1677FF] text-sm mt-0.5 leading-none" />
                     <p className="text-[11px] text-blue-700 font-medium leading-relaxed">
                       Thông tin này được ghi lại tự động và không thể chỉnh sửa thủ công.
                     </p>
@@ -233,7 +240,7 @@ export default function BranchViewPage() {
               </button>
               <Link href={`/admin/branch/edit/${branch.id}`}>
                 <button className="px-10 py-3 rounded-xl bg-[#1677FF] text-white font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-2">
-                  <EditOutlined className="text-sm" /> Chỉnh sửa
+                  <EditOutlined className="text-sm leading-none" /> Chỉnh sửa
                 </button>
               </Link>
             </div>
