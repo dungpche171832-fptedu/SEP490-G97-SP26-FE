@@ -21,7 +21,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, type BranchViewResponse } from "@/services/branch.service";
 
 // ============================================================================
-// 1. INFO FIELD COMPONENT (Đã FIX lỗi lệch icon và text)
+// 1. INFO FIELD COMPONENT
 // ============================================================================
 interface InfoFieldProps {
   label: string;
@@ -36,11 +36,11 @@ const InfoField = ({ label, value, icon, isBold = false }: InfoFieldProps) => (
       {label}
     </label>
     <div className="flex items-center gap-2.5">
-      {/* Ép icon không có line-height và fix cứng kích thước */}
+      {}
       <div className="text-[#1677FF] text-[16px] flex items-center justify-center leading-none">
         {icon}
       </div>
-      {/* Triệt tiêu line-height của text và đẩy nhẹ xuống 2px để thẳng tâm với icon */}
+      {}
       <div
         className={`${isBold ? "font-black text-slate-800 text-[15px]" : "font-bold text-slate-700 text-[14px]"} leading-none mt-[2px] truncate`}
       >
@@ -96,7 +96,7 @@ export default function BranchViewPage() {
         <Header />
 
         <div className="p-10 h-full overflow-y-auto">
-          {/* BREADCRUMB */}
+          {}
           <div className="flex items-center gap-2 mb-8">
             <Link
               href="/admin/branch"
