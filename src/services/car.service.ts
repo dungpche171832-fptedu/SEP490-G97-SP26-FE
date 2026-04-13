@@ -108,6 +108,19 @@ export interface CarAddResponse {
   manufactureYear: number;
   description: string;
 }
+export interface CarViewResponse {
+  id: number;
+  licensePlate: string;
+  branchName: string;
+  branchCode: string;
+  branchEmail: string;
+  carType: string;
+  totalSeat: number;
+  status: string;
+  manufactureYear: number;
+  description: string;
+  isActive: boolean;
+}
 
 /* ================= API ================= */
 
@@ -132,5 +145,14 @@ export const getBranchesForSelect = async (): Promise<Branch[]> => {
   } catch (error) {
     console.error("Lỗi lấy danh sách chi nhánh:", error);
     return [];
+  }
+};
+export const getCarDetail = async (id: string | number): Promise<CarViewResponse | null> => {
+  try {
+    const response = await axiosInstance.get<CarViewResponse>(`/api/cars/cars/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi lấy chi tiết xe:", error);
+    return null;
   }
 };
