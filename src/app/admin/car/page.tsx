@@ -192,7 +192,6 @@ interface TableRowProps {
   year?: number;
 }
 
-// ✅ 2. Thay thế `any` bằng `TableRowProps`
 function TableRow({ id, plate, branch, type, seats, status, usage, year }: TableRowProps) {
   const formatPlate = (p: string) => {
     if (!p) return "—";
@@ -246,10 +245,12 @@ function TableRow({ id, plate, branch, type, seats, status, usage, year }: Table
       </td>
       <td className="px-6 py-5 text-right">
         <div className="flex items-center justify-end gap-4 text-[#94A3B8]">
-          <Link href={`/admin/car/view/${id}`} className="hover:text-blue-600 transition-colors">
+          {}
+          <Link href={`/admin/car/view?id=${id}`} className="hover:text-blue-600 transition-colors">
             <EyeOutlined className="text-[17px]" />
           </Link>
-          <Link href={`/admin/car/edit/${id}`} className="hover:text-blue-600 transition-colors">
+          {}
+          <Link href={`/admin/car/edit?id=${id}`} className="hover:text-blue-600 transition-colors">
             <EditOutlined className="text-[17px]" />
           </Link>
           <button className="hover:text-red-500 transition-colors" title="Xóa">
