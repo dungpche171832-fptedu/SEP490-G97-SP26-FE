@@ -8,12 +8,8 @@ import {
   InfoCircleOutlined,
   EnvironmentOutlined,
   SettingOutlined,
-  CheckCircleFilled,
   RightOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  CalendarOutlined,
-  UserOutlined,
+  QuestionCircleOutlined,
 } from "@ant-design/icons";
 
 import Header from "@/components/admin/Header";
@@ -21,32 +17,17 @@ import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, type BranchViewResponse } from "@/services/branch.service";
 
 // ============================================================================
-// 1. INFO FIELD COMPONENT
+// 1. INFO BLOCK COMPONENT
 // ============================================================================
-interface InfoFieldProps {
+interface InfoBlockProps {
   label: string;
   value?: string | number | null;
-  icon: React.ReactNode;
-  isBold?: boolean;
 }
 
-const InfoField = ({ label, value, icon, isBold = false }: InfoFieldProps) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none">
-      {label}
-    </label>
-    <div className="flex items-center gap-2.5">
-      {}
-      <div className="text-[#1677FF] text-[16px] flex items-center justify-center leading-none">
-        {icon}
-      </div>
-      {}
-      <div
-        className={`${isBold ? "font-black text-slate-800 text-[15px]" : "font-bold text-slate-700 text-[14px]"} leading-none mt-[2px] truncate`}
-      >
-        {value || "—"}
-      </div>
-    </div>
+const InfoBlock = ({ label, value }: InfoBlockProps) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{label}</label>
+    <div className="font-semibold text-slate-800 text-[14px]">{value || "—"}</div>
   </div>
 );
 
@@ -95,135 +76,115 @@ export default function BranchViewPage() {
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
 
-        <div className="p-10 h-full overflow-y-auto">
-          {}
-          <div className="flex items-center gap-2 mb-8">
+        <div className="p-8 h-full overflow-y-auto">
+          {/* BREADCRUMB */}
+          <div className="flex items-center gap-3 mb-6">
             <Link
               href="/admin/branch"
-              className="text-slate-400 hover:text-[#1677FF] transition-colors text-sm font-bold"
+              className="text-slate-500 hover:text-[#1677FF] transition-colors text-[15px]"
             >
               Chi nhánh
             </Link>
-            <RightOutlined className="text-slate-300 text-[10px]" />
-            <span className="font-bold text-slate-800 text-sm">Chi tiết chi nhánh</span>
+            <RightOutlined className="text-slate-400 text-[12px]" />
+            <span className="font-bold text-slate-800 text-[15px]">Chi tiết chi nhánh</span>
           </div>
 
           <div className="max-w-[1300px] mx-auto space-y-6">
             {/* CARD 1: THÔNG TIN CƠ BẢN */}
-            <div className="bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
-              <div className="px-8 py-5 border-b border-slate-50 flex justify-between items-center bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
-                    <InfoCircleOutlined className="text-[#1677FF] text-lg leading-none" />
-                  </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">
-                    Thông tin cơ bản
-                  </h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <InfoCircleOutlined className="text-[#1677FF] text-[18px]" />
+                  <h3 className="font-bold text-[16px] text-slate-800">Thông tin cơ bản</h3>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider bg-[#D1FAE5] text-[#059669]">
-                  <CheckCircleFilled className="text-[10px] leading-none" />
+                <span className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1 rounded-full bg-[#Edfaf1] text-[#0ea254]">
+                  <span className="w-1.5 h-1.5 bg-[#0ea254] rounded-full"></span>
                   Đang hoạt động
                 </span>
               </div>
 
-              <div className="p-10">
-                <div className="grid grid-cols-3 gap-x-12 gap-y-10 items-start">
-                  <InfoField
-                    label="Mã chi nhánh"
-                    value={branch.code}
-                    isBold
-                    icon={<SettingOutlined />}
-                  />
-                  <InfoField
-                    label="Tên chi nhánh"
-                    value={branch.name}
-                    isBold
-                    icon={<InfoCircleOutlined />}
-                  />
-
-                  {/* Khối quản lý căn chỉnh lại label cho bằng với các label khác */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none">
-                      Quản lý chi nhánh
-                    </label>
-                    <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full max-w-[240px]">
-                      <div className="w-10 h-10 rounded-full bg-[#1677FF] flex items-center justify-center text-white text-base font-black shadow-lg shadow-blue-100 shrink-0">
-                        {branch.managerName?.charAt(0)}
-                      </div>
-                      <div className="truncate flex flex-col justify-center gap-1">
-                        <p className="font-black text-slate-800 text-[14px] leading-none truncate">
-                          {branch.managerName}
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase leading-none">
-                          Quản lý cấp cao
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <InfoField label="Số điện thoại" value={branch.phone} icon={<PhoneOutlined />} />
-                  <InfoField label="Email chi nhánh" value={branch.email} icon={<MailOutlined />} />
+              <div className="p-6">
+                <div className="grid grid-cols-3 gap-y-8 gap-x-12">
+                  <InfoBlock label="MÃ CHI NHÁNH" value={branch.code} />
+                  <InfoBlock label="TÊN CHI NHÁNH" value={branch.name} />
+                  <InfoBlock label="QUẢN LÝ CHI NHÁNH" value={branch.managerName} />
+                  <InfoBlock label="SỐ ĐIỆN THOẠI" value={branch.phone} />
+                  <InfoBlock label="EMAIL CHI NHÁNH" value={branch.email} />
                 </div>
               </div>
             </div>
 
             {/* 2 COLUMNS: ĐỊA CHỈ & HỆ THỐNG */}
             <div className="grid grid-cols-12 gap-6 items-stretch">
-              <div className="col-span-12 lg:col-span-7 bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
-                    <EnvironmentOutlined className="text-[#1677FF] text-lg leading-none" />
-                  </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">Địa chỉ</h3>
+              {/* CARD ĐỊA CHỈ */}
+              <div className="col-span-12 lg:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+                  <EnvironmentOutlined className="text-[#1677FF] text-[18px]" />
+                  <h3 className="font-bold text-[16px] text-slate-800 uppercase tracking-wide">
+                    ĐỊA CHỈ CHI TIẾT
+                  </h3>
                 </div>
-                <div className="p-10 grid grid-cols-2 gap-10">
-                  <InfoField label="Tỉnh/Thành phố" value="Hà Nội" icon={<EnvironmentOutlined />} />
-                  <InfoField label="Phường/Xã" value="Hoàng Mai" icon={<EnvironmentOutlined />} />
-                  <div className="col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-3 leading-none">
-                      Địa chỉ chi tiết
-                    </label>
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                      <p className="text-slate-800 font-bold text-[15px] leading-relaxed">
-                        {branch.address}
-                      </p>
-                    </div>
-                  </div>
+                <div className="p-6">
+                  <p className="text-slate-800 font-medium text-[14px] leading-relaxed">
+                    {branch.address || "Chưa cập nhật địa chỉ"}
+                  </p>
                 </div>
               </div>
 
-              <div className="col-span-12 lg:col-span-5 bg-white rounded-[24px] border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-50 flex items-center gap-3">
-                  <div className="bg-blue-50 p-2 rounded-xl border border-blue-100 flex items-center justify-center">
-                    <SettingOutlined className="text-[#1677FF] text-lg leading-none" />
-                  </div>
-                  <h3 className="font-black text-lg text-slate-800 tracking-tight mt-1">
-                    Hệ thống
-                  </h3>
+              {/* CARD THÔNG TIN HỆ THỐNG */}
+              <div className="col-span-12 lg:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+                  <SettingOutlined className="text-[#1677FF] text-[18px]" />
+                  <h3 className="font-bold text-[16px] text-slate-800">Thông tin hệ thống</h3>
                 </div>
-                <div className="p-10 space-y-8">
+                <div className="p-6 space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] block mb-3 leading-none">
-                      ID Chi nhánh (UUID)
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                      ID CHI NHÁNH (UUID)
                     </label>
-                    <code className="text-[11px] font-mono font-bold text-slate-500 bg-slate-50 p-3.5 rounded-xl border border-slate-100 block break-all leading-none">
-                      {mockUUID}
-                    </code>
+                    <div className="bg-slate-50 px-3 py-2 rounded border border-slate-100">
+                      <code className="text-[13px] text-slate-600 font-mono">{mockUUID}</code>
+                    </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-6">
-                    <InfoField label="Ngày tạo" value="15/05/2024" icon={<CalendarOutlined />} />
-                    <InfoField
-                      label="Cập nhật lúc"
-                      value="20/05/2024"
-                      icon={<CalendarOutlined />}
-                    />
-                    <InfoField label="Người tạo" value="Admin" icon={<UserOutlined />} />
-                    <InfoField label="Người cập nhật" value="Admin" icon={<UserOutlined />} />
+                    <InfoBlock label="NGÀY TẠO" value="15/05/2024 09:30" />
+                    <InfoBlock label="NGÀY CẬP NHẬT" value="20/05/2024 14:20" />
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        NGƯỜI TẠO
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[9px] font-bold">
+                          A
+                        </div>
+                        <span className="font-semibold text-slate-800 text-[14px]">
+                          Admin Việt Trung
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        NGƯỜI CẬP NHẬT
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[9px] font-bold">
+                          A
+                        </div>
+                        <span className="font-semibold text-slate-800 text-[14px]">
+                          Admin Việt Trung
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-3 items-start">
-                    <InfoCircleOutlined className="text-[#1677FF] text-sm mt-0.5 leading-none" />
-                    <p className="text-[11px] text-blue-700 font-medium leading-relaxed">
-                      Thông tin này được ghi lại tự động và không thể chỉnh sửa thủ công.
+
+                  <div className="p-3 bg-[#f0f7ff] rounded-lg border border-[#e1effe] flex gap-3 items-start">
+                    <QuestionCircleOutlined className="text-[#1677FF] mt-0.5" />
+                    <p className="text-[12px] text-slate-600 leading-relaxed">
+                      Dữ liệu này được ghi lại tự động bởi hệ thống cho mục đích đối soát và lịch sử
+                      thay đổi. Không thể sửa đổi trực tiếp các thông tin này.
                     </p>
                   </div>
                 </div>
@@ -231,16 +192,10 @@ export default function BranchViewPage() {
             </div>
 
             {/* ACTIONS */}
-            <div className="flex justify-end gap-3 pt-4 pb-10">
-              <button
-                onClick={() => router.back()}
-                className="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
-              >
-                Quay lại
-              </button>
+            <div className="flex justify-end pt-2 pb-10">
               <Link href={`/admin/branch/edit/${branch.id}`}>
-                <button className="px-10 py-3 rounded-xl bg-[#1677FF] text-white font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-2">
-                  <EditOutlined className="text-sm leading-none" /> Chỉnh sửa
+                <button className="px-6 py-2.5 rounded-lg bg-[#1677FF] text-white font-medium hover:bg-blue-700 transition-all flex items-center gap-2 text-[14px]">
+                  Chỉnh sửa <EditOutlined className="text-[13px]" />
                 </button>
               </Link>
             </div>
