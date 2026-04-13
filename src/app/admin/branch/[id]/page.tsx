@@ -17,7 +17,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, type BranchViewResponse } from "@/services/branch.service";
 
 // ============================================================================
-// 1. INFO BLOCK COMPONENT (Tối giản theo đúng thiết kế Figma mới)
+// 1. INFO BLOCK COMPONENT
 // ============================================================================
 interface InfoBlockProps {
   label: string;
