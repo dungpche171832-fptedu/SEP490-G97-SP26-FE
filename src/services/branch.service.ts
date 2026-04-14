@@ -34,7 +34,12 @@ export type AddBranchRequest = {
   phone: string;
   email: string;
   isActive: boolean;
-  managerAccountId: number;
+  // Các trường mới cho Manager Account
+  managerFullName: string;
+  managerEmail: string;
+  managerPhone: string;
+  managerPassword?: string;
+  roleId: number; // Thường là ID của role MANAGER
 };
 
 export type AddBranchResponse = {
