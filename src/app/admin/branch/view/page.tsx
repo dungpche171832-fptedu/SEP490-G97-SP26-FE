@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   EditOutlined,
@@ -17,7 +17,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, type BranchViewResponse } from "@/services/branch.service";
 
 // ============================================================================
-// 1. INFO BLOCK COMPONENT
+// 1. INFO BLOCK COMPONENT (Chuẩn tối giản Figma mới)
 // ============================================================================
 interface InfoBlockProps {
   label: string;
@@ -35,9 +35,8 @@ const InfoBlock = ({ label, value }: InfoBlockProps) => (
 // 2. COMPONENT CHÍNH
 // ============================================================================
 export default function BranchViewPage() {
-  const params = useParams();
-  const router = useRouter();
-  const branchId = params?.id;
+  const searchParams = useSearchParams();
+  const branchId = searchParams.get("id");
 
   const [branch, setBranch] = useState<BranchViewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,8 +45,15 @@ export default function BranchViewPage() {
     const fetchDetail = async () => {
       if (branchId) {
         setLoading(true);
-        const data = await getBranchDetail(branchId as string);
-        setBranch(data);
+        try {
+          const data = await getBranchDetail(branchId as string);
+          setBranch(data);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
         setLoading(false);
       }
     };
@@ -67,7 +73,30 @@ export default function BranchViewPage() {
     );
   }
 
-  if (!branch) return null;
+  // ✅ Sửa lỗi màn hình đen: Hiển thị giao diện báo lỗi thay vì return null
+  if (!branch) {
+    return (
+      <div className="flex h-screen bg-[#F8FAFC] font-sans">
+        <Sidebar />
+        <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
+          <Header />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center bg-white p-10 rounded-2xl border border-slate-200 shadow-sm">
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Không tìm thấy dữ liệu</h2>
+              <p className="text-slate-500 mb-6">
+                Chi nhánh này không tồn tại hoặc ID không hợp lệ.
+              </p>
+              <Link href="/admin/branch">
+                <button className="px-6 py-2.5 bg-[#1677FF] text-white rounded-lg font-medium">
+                  Quay lại danh sách
+                </button>
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans">
@@ -97,9 +126,13 @@ export default function BranchViewPage() {
                   <InfoCircleOutlined className="text-[#1677FF] text-[18px]" />
                   <h3 className="font-bold text-[16px] text-slate-800">Thông tin cơ bản</h3>
                 </div>
-                <span className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1 rounded-full bg-[#Edfaf1] text-[#0ea254]">
-                  <span className="w-1.5 h-1.5 bg-[#0ea254] rounded-full"></span>
-                  Đang hoạt động
+                <span
+                  className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1 rounded-full ${branch.isActive ? "bg-[#Edfaf1] text-[#0ea254]" : "bg-red-50 text-red-600"}`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${branch.isActive ? "bg-[#0ea254]" : "bg-red-600"}`}
+                  ></span>
+                  {branch.isActive ? "Đang hoạt động" : "Tạm nghỉ"}
                 </span>
               </div>
 
@@ -107,7 +140,10 @@ export default function BranchViewPage() {
                 <div className="grid grid-cols-3 gap-y-8 gap-x-12">
                   <InfoBlock label="MÃ CHI NHÁNH" value={branch.code} />
                   <InfoBlock label="TÊN CHI NHÁNH" value={branch.name} />
-                  <InfoBlock label="QUẢN LÝ CHI NHÁNH" value={branch.managerName} />
+                  <InfoBlock
+                    label="QUẢN LÝ CHI NHÁNH"
+                    value={branch.managerName || "Chưa phân công"}
+                  />
                   <InfoBlock label="SỐ ĐIỆN THOẠI" value={branch.phone} />
                   <InfoBlock label="EMAIL CHI NHÁNH" value={branch.email} />
                 </div>
@@ -193,7 +229,7 @@ export default function BranchViewPage() {
 
             {/* ACTIONS */}
             <div className="flex justify-end pt-2 pb-10">
-              <Link href={`/admin/branch/edit/${branch.id}`}>
+              <Link href={`/admin/branch/edit?id=${branch.id}`}>
                 <button className="px-6 py-2.5 rounded-lg bg-[#1677FF] text-white font-medium hover:bg-blue-700 transition-all flex items-center gap-2 text-[14px]">
                   Chỉnh sửa <EditOutlined className="text-[13px]" />
                 </button>

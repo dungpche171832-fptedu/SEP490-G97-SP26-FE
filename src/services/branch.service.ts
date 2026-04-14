@@ -151,6 +151,13 @@ export async function getBranchDetail(id: number | string): Promise<BranchViewRe
     return null;
   }
 }
+export async function updateBranch(
+  id: number | string,
+  request: AddBranchRequest,
+): Promise<AddBranchResponse> {
+  const response = await branchClient.put<AddBranchResponse>(`/branches/${id}`, request);
+  return response.data;
+}
 
 export async function getBranchManagers(): Promise<BranchManagerAccount[]> {
   try {
