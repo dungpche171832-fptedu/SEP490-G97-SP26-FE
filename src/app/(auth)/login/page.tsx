@@ -2,24 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useAuthSubmit, AuthFormValues } from "@/hooks/useAuthSubmit";
-
-// Định nghĩa Interface cho Hook State để tránh dùng 'any'
-interface AuthHookState {
-  loading: boolean;
-  error: string | null;
-  handleSubmit: (values: AuthFormValues) => Promise<void>;
-}
-
+import { loginApi } from "@/lib/apiLogin";
+import { registerApi } from "@/lib/apiLogin";
+import { useRouter } from "next/navigation";
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
-
-  const loginAuth = useAuthSubmit("login");
-  const registerAuth = useAuthSubmit("register");
-
   return (
     <div className="min-h-[100vh] bg-[#F1F5F9] flex flex-col items-center justify-center p-4 text-black">
       <div className="w-[420px] bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
+        {/* Banner */}
         <div className="px-5 pt-5">
           <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-[#EAF2F8]">
             <Image
@@ -32,6 +23,7 @@ export default function AuthPage() {
           </div>
         </div>
 
+        {/* Title */}
         <div className="pt-6 pb-4 px-6 flex flex-col items-center">
           <div className="flex items-center justify-center gap-2 h-10">
             <Image
@@ -41,15 +33,18 @@ export default function AuthPage() {
               height={22}
               className="shrink-0"
             />
+
             <h1 className="text-[20px] font-bold leading-none text-[#0F172A] tracking-[-0.02em]">
               Xe Limou Việt Trung
             </h1>
           </div>
+
           <p className="mt-1.5 text-center text-[13px] font-medium text-[#64748B]">
             Hệ thống quản lý dịch vụ vận chuyển
           </p>
         </div>
 
+        {/* Tabs */}
         <div className="flex border-b border-gray-200 text-[14px] font-bold px-4 mx-2">
           <button
             onClick={() => setTab("login")}
@@ -73,29 +68,34 @@ export default function AuthPage() {
           </button>
         </div>
 
-        <div className="p-8 pb-10">
-          {tab === "login" ? (
-            <LoginForm auth={loginAuth} />
-          ) : (
-            <RegisterForm auth={registerAuth} onRegisterSuccess={() => setTab("login")} />
-          )}
-        </div>
+        {/* Form */}
+        <div className="p-8 pb-10">{tab === "login" ? <LoginForm /> : <RegisterForm />}</div>
       </div>
     </div>
   );
 }
 
-// --- Định nghĩa props cho Input ---
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+function Input({
+  label,
+  placeholder,
+  type = "text",
+  value,
+  onChange,
+}: {
   label: string;
-}
-
-function Input({ label, ...props }: InputProps) {
+  placeholder: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
   return (
     <div className="mb-4">
       <label className="block text-[13px] font-bold mb-1.5 text-[#334155]">{label}</label>
       <input
-        {...props}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
         className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A]
         focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A]
         transition-all duration-200"
@@ -104,12 +104,35 @@ function Input({ label, ...props }: InputProps) {
   );
 }
 
-function LoginForm({ auth }: { auth: AuthHookState }) {
+function LoginForm() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onLogin = () => {
-    auth.handleSubmit({ email, password });
+  const handleLogin = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await loginApi({ email, password });
+
+      localStorage.setItem("token", data.accessToken);
+
+      router.push("/home");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Đăng nhập thất bại");
+      }
+
+      setPassword("");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -119,7 +142,7 @@ function LoginForm({ auth }: { auth: AuthHookState }) {
         placeholder="Nhập email của bạn"
         type="email"
         value={email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        onChange={(e) => setEmail(e.target.value)}
       />
 
       <Input
@@ -127,24 +150,24 @@ function LoginForm({ auth }: { auth: AuthHookState }) {
         placeholder="Nhập mật khẩu"
         type="password"
         value={password}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
       />
 
-      {auth.error && (
+      {error && (
         <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-md border border-red-200">
-          {auth.error}
+          {error}
         </div>
       )}
 
       <button
-        onClick={onLogin}
-        disabled={auth.loading}
+        onClick={handleLogin}
+        disabled={loading}
         className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
         !text-white font-bold text-[14px] py-3 rounded-lg
         transition-all duration-200 active:scale-[0.98]
         disabled:opacity-60 shadow-sm"
       >
-        {auth.loading ? "Đang đăng nhập..." : "Đăng nhập"}
+        {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
 
       <div className="text-center text-[12.5px] font-medium text-[#94A3B8] mt-5 hover:text-[#0F172A] cursor-pointer transition-colors">
@@ -154,20 +177,18 @@ function LoginForm({ auth }: { auth: AuthHookState }) {
   );
 }
 
-function RegisterForm({
-  auth,
-  onRegisterSuccess,
-}: {
-  auth: AuthHookState;
-  onRegisterSuccess: () => void;
-}) {
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "" });
+function RegisterForm() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
 
-  const onRegister = async () => {
-    await auth.handleSubmit(form);
-    if (!auth.error) {
-      alert("Đăng ký thành công!");
-      onRegisterSuccess();
+  const handleRegister = async () => {
+    try {
+      await registerApi({ fullName, email, phone, password });
+      alert("Đăng ký thành công");
+    } catch {
+      alert("Đăng ký thất bại");
     }
   };
 
@@ -176,53 +197,40 @@ function RegisterForm({
       <Input
         label="Họ và tên"
         placeholder="Nhập họ và tên"
-        value={form.fullName}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, fullName: e.target.value })
-        }
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
       />
+
       <Input
         label="Email"
         placeholder="Nhập email"
         type="email"
-        value={form.email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, email: e.target.value })
-        }
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
       />
+
       <Input
         label="Số điện thoại"
         placeholder="Nhập số điện thoại"
-        value={form.phone}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, phone: e.target.value })
-        }
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
       />
+
       <Input
         label="Mật khẩu"
         placeholder="Nhập mật khẩu"
         type="password"
-        value={form.password}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, password: e.target.value })
-        }
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
       />
 
-      {auth.error && (
-        <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-md border border-red-200">
-          {auth.error}
-        </div>
-      )}
-
       <button
-        onClick={onRegister}
-        disabled={auth.loading}
+        onClick={handleRegister}
         className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
         !text-white font-bold text-[14px] py-3 rounded-lg
-        transition-all duration-200 active:scale-[0.98] shadow-sm
-        disabled:opacity-60"
+        transition-all duration-200 active:scale-[0.98] shadow-sm"
       >
-        {auth.loading ? "Đang xử lý..." : "Đăng ký"}
+        Đăng ký
       </button>
     </div>
   );
