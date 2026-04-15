@@ -81,3 +81,66 @@ export async function updateProfile(data: { fullName: string; phone: string }) {
 
   return res.json();
 }
+export async function changePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Missing token");
+
+  const res = await fetch(`${API_BASE}/api/account/change-password`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  const responseText = await res.text();
+  console.log("change-password status:", res.status);
+  console.log("change-password responseText:", responseText);
+
+  let parsed: { code?: string; message?: string; result?: unknown } | null = null;
+
+  try {
+    parsed = responseText
+      ? (JSON.parse(responseText) as {
+          code?: string;
+          message?: string;
+          result?: unknown;
+        })
+      : null;
+  } catch {
+    parsed = null;
+  }
+
+  // 1) HTTP lỗi thật
+  if (!res.ok) {
+    throw new Error(parsed?.message || responseText || "Đổi mật khẩu thất bại");
+  }
+
+  // 2) HTTP 200 nhưng body thực ra là lỗi nghiệp vụ
+  if (parsed?.code && parsed?.message) {
+    const successCode = String(parsed.code).startsWith("SUCCESS");
+    const successMessage =
+      typeof parsed.message === "string" && parsed.message.toLowerCase().includes("thành công");
+
+    if (!successCode && !successMessage) {
+      throw new Error(parsed.message);
+    }
+  }
+
+  // 3) Thành công thật
+  if (typeof responseText === "string" && responseText.toLowerCase().includes("thành công")) {
+    return responseText;
+  }
+
+  // 4) Có JSON nhưng không phải lỗi
+  if (parsed) {
+    return parsed;
+  }
+
+  throw new Error("Đổi mật khẩu thất bại");
+}

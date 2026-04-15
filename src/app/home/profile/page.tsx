@@ -10,7 +10,7 @@ import {
 } from "@ant-design/icons";
 
 import ProfileHeader from "@/components/profile/ProfileHeader";
-import { getAccountInfo, updateProfile } from "@/services/account.service";
+import { getAccountInfo, updateProfile, changePassword } from "@/services/account.service";
 
 type Profile = {
   fullName: string;
@@ -31,7 +31,53 @@ export default function ProfilePage() {
     email: "",
     phone: "",
   });
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+  const handleChangePassword = async () => {
+    if (!currentPassword.trim()) {
+      message.error("Vui lòng nhập mật khẩu hiện tại");
+      return;
+    }
 
+    if (!newPassword.trim()) {
+      message.error("Vui lòng nhập mật khẩu mới");
+      return;
+    }
+
+    if (!confirmPassword.trim()) {
+      message.error("Vui lòng xác nhận mật khẩu mới");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      message.error("Xác nhận mật khẩu mới không khớp");
+      return;
+    }
+
+    try {
+      setLoadingChangePassword(true);
+
+      await changePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+
+      message.success("Đổi mật khẩu thành công");
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: unknown) {
+      console.error("Change password error:", e);
+      const errorMessage = e instanceof Error ? e.message : "Đổi mật khẩu thất bại";
+      message.error(errorMessage);
+    } finally {
+      setLoadingChangePassword(false);
+    }
+  };
   useEffect(() => {
     (async () => {
       try {
@@ -308,23 +354,38 @@ export default function ProfilePage() {
                 styles={{ body: { fontFamily: pageFont } }}
               >
                 <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Mật khẩu hiện tại */}
                   <div>
                     <div style={labelStyle}>Mật khẩu hiện tại</div>
                     <Input.Password
                       placeholder="Nhập mật khẩu hiện tại"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       visibilityToggle={false}
                       style={inputStyle}
                     />
                   </div>
 
+                  {/* Mật khẩu mới */}
                   <div>
                     <div style={labelStyle}>Mật khẩu mới</div>
-                    <Input.Password placeholder="Nhập mật khẩu mới" style={inputStyle} />
+                    <Input.Password
+                      placeholder="Nhập mật khẩu mới"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      style={inputStyle}
+                    />
                   </div>
 
+                  {/* Xác nhận mật khẩu */}
                   <div>
                     <div style={labelStyle}>Xác nhận mật khẩu mới</div>
-                    <Input.Password placeholder="Xác nhận mật khẩu mới" style={inputStyle} />
+                    <Input.Password
+                      placeholder="Xác nhận mật khẩu mới"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      style={inputStyle}
+                    />
                   </div>
                 </div>
 
@@ -334,7 +395,8 @@ export default function ProfilePage() {
                     size="large"
                     style={buttonStyle}
                     icon={<img src="/icons/changepasswork.png" alt="icon" style={{ width: 15 }} />}
-                    onClick={() => message.info("Chức năng đang phát triển")}
+                    loading={loadingChangePassword}
+                    onClick={handleChangePassword} // changepw
                   >
                     Đổi mật khẩu
                   </Button>
