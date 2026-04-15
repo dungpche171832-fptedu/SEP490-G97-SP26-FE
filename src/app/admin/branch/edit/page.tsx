@@ -18,6 +18,13 @@ import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, updateBranch, type AddBranchRequest } from "@/services/branch.service";
 
+// ✅ Định nghĩa kiểu dữ liệu cho Response lỗi từ Backend để tránh dùng 'any'
+interface ApiErrorResponse {
+  code?: string;
+  message?: string;
+  error?: string;
+}
+
 export default function EditBranchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,14 +62,12 @@ export default function EditBranchPage() {
           const data = await getBranchDetail(branchId);
           if (data) {
             setFormData({
-              code: data.code,
-              name: data.name,
-              address: data.address,
-              phone: data.phone,
-              email: data.email,
-              isActive: data.isActive,
-
-              // ✅ Đã xóa data.managerEmail và data.managerPhone để tránh lỗi TypeScript
+              code: data.code || "",
+              name: data.name || "",
+              address: data.address || "",
+              phone: data.phone || "",
+              email: data.email || "",
+              isActive: data.isActive ?? true,
               managerFullName: data.managerName || "",
               managerEmail: "",
               managerPhone: "",
@@ -71,7 +76,9 @@ export default function EditBranchPage() {
             });
             setSystemInfo((prev) => ({
               ...prev,
-              id: data.id.toString().padStart(8, "0") + "-e29b-41d4-a716-446655440000",
+              id: data?.id
+                ? String(data.id).padStart(8, "0") + "-e29b-41d4-a716-446655440000"
+                : "N/A",
             }));
           }
         } catch (error) {
@@ -94,14 +101,46 @@ export default function EditBranchPage() {
 
   const handleSubmit = async () => {
     if (!branchId) return;
+
+    // ✅ FIX BỔ SUNG: Kiểm tra các trường bắt buộc không được bỏ trống
+    if (
+      !formData.code?.trim() ||
+      !formData.name?.trim() ||
+      !formData.phone?.trim() ||
+      !formData.email?.trim() ||
+      !formData.address?.trim()
+    ) {
+      message.error("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
+      return; // ⛔ Dừng thực thi, không gọi API
+    }
+
     try {
       setSubmitting(true);
-      await updateBranch(branchId, formData);
+      const res = (await updateBranch(branchId, formData)) as unknown as ApiErrorResponse;
+
+      if (res && res.code && typeof res.code === "string" && res.code.startsWith("BR-")) {
+        if (res.code === "BR-004") {
+          message.error(res.message || "Chi nhánh đang tạm nghỉ, không thể chỉnh sửa!");
+        } else if (res.code === "BR-001") {
+          message.error(res.message || "Mã chi nhánh hoặc Email đã tồn tại!");
+        } else if (res.code === "BR-006") {
+          message.error(res.message || "Số điện thoại chi nhánh đã tồn tại!");
+        } else {
+          message.error(res.message || "Có lỗi xảy ra từ hệ thống!");
+        }
+        return;
+      }
+
       message.success("Cập nhật chi nhánh thành công!");
       router.push("/admin/branch");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
-      message.error("Lỗi khi cập nhật chi nhánh.");
+
+      const err = error as { response?: { data?: ApiErrorResponse } };
+      const errorData = err.response?.data;
+      const errorMsg = errorData?.message || errorData?.error || "";
+
+      message.error(errorMsg || "Lỗi khi cập nhật chi nhánh.");
     } finally {
       setSubmitting(false);
     }
@@ -117,10 +156,8 @@ export default function EditBranchPage() {
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-900">
       <Sidebar />
-
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
-
         <div className="p-8 h-full overflow-y-auto">
           {/* Breadcrumb */}
           <div className="flex items-center gap-3 mb-4 text-sm font-medium">
@@ -266,7 +303,7 @@ export default function EditBranchPage() {
                 <div className="flex items-center gap-2 mb-6">
                   <SettingOutlined className="text-blue-500" />
                   <h3 className="font-bold text-slate-700 uppercase tracking-wider text-xs">
-                    Thông tin hệ thống
+                    Thông-tin hệ thống
                   </h3>
                 </div>
 
