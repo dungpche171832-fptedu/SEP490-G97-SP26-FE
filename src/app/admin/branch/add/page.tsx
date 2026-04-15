@@ -18,12 +18,18 @@ import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
 import { addBranch, type AddBranchRequest } from "@/services/branch.service";
 
+// ✅ Định nghĩa kiểu dữ liệu cho Response lỗi từ Backend để tránh dùng 'any'
+interface ApiErrorResponse {
+  code?: string;
+  message?: string;
+  error?: string;
+}
+
 export default function AddBranchPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Khởi tạo state theo JSON mẫu của Duy
   const [formData, setFormData] = useState<AddBranchRequest>({
     code: "",
     name: "",
@@ -35,7 +41,7 @@ export default function AddBranchPage() {
     managerEmail: "",
     managerPhone: "",
     managerPassword: "",
-    roleId: 2, // Giả sử 2 là Role Manager
+    roleId: 2,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -44,20 +50,60 @@ export default function AddBranchPage() {
   };
 
   const handleSubmit = async () => {
-    // Validate cơ bản
-    if (!formData.code || !formData.name || !formData.managerEmail) {
-      message.error("Vui lòng điền đầy đủ các trường bắt buộc (*)");
+    // 1. Validate FE cơ bản
+    if (
+      !formData.code ||
+      !formData.name ||
+      !formData.phone ||
+      !formData.email ||
+      !formData.address
+    ) {
+      message.error("Vui lòng điền đầy đủ thông tin chi nhánh (*)");
+      return;
+    }
+
+    if (
+      !formData.managerFullName ||
+      !formData.managerPhone ||
+      !formData.managerEmail ||
+      !formData.managerPassword
+    ) {
+      message.error("Vui lòng điền đầy đủ thông tin tài khoản quản lý (*)");
       return;
     }
 
     try {
       setLoading(true);
-      await addBranch(formData);
+      // ✅ Sửa 'any' thành 'unknown' kết hợp ép kiểu để pass ESLint
+      const res = (await addBranch(formData)) as unknown as ApiErrorResponse;
+
+      if (res && res.code && typeof res.code === "string" && res.code.startsWith("BR-")) {
+        if (res.code === "BR-001") {
+          message.error(res.message || "Mã chi nhánh hoặc Email đã tồn tại!");
+        } else if (res.code === "BR-006") {
+          message.error(res.message || "Số điện thoại chi nhánh đã tồn tại!");
+        } else {
+          message.error(res.message || "Có lỗi xảy ra từ hệ thống!");
+        }
+        return;
+      }
+
       message.success("Thêm chi nhánh và tài khoản quản lý thành công!");
       router.push("/admin/branch");
-    } catch (error) {
-      console.error(error);
-      message.error("Có lỗi xảy ra khi tạo chi nhánh.");
+    } catch (error: unknown) {
+      // ✅ Sửa 'any' thành 'unknown'
+      console.error("Lỗi API Add Branch:", error);
+
+      // Ép kiểu error an toàn để lấy data
+      const err = error as { response?: { data?: ApiErrorResponse } };
+      const errorData = err.response?.data;
+      const errorMsg = errorData?.message || errorData?.error || "";
+
+      if (errorData?.code === "BR-001" || errorMsg.includes("tồn tại")) {
+        message.error("Dữ liệu này đã tồn tại trong hệ thống!");
+      } else {
+        message.error("Có lỗi xảy ra khi tạo chi nhánh. Vui lòng thử lại sau!");
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +154,7 @@ export default function AddBranchPage() {
                       value={formData.code}
                       onChange={handleChange}
                       placeholder="VD: CN-HN-01"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                     />
                     <span className="text-[10px] text-slate-400 italic">
                       Mã chi nhánh là duy nhất trong hệ thống
@@ -123,7 +169,7 @@ export default function AddBranchPage() {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="VD: Chi nhánh Hà Nội 1"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -135,7 +181,7 @@ export default function AddBranchPage() {
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="024 xxxx xxxx"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -147,7 +193,7 @@ export default function AddBranchPage() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="chinhanh@velimou.vn"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                     />
                   </div>
                 </div>
@@ -172,7 +218,7 @@ export default function AddBranchPage() {
                       onChange={handleChange}
                       rows={3}
                       placeholder="Số nhà, tên đường, phường/xã, tỉnh/thành phố"
-                      className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none"
+                      className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none font-semibold"
                     />
                   </div>
                 </div>
@@ -197,7 +243,7 @@ export default function AddBranchPage() {
                         value={formData.managerFullName}
                         onChange={handleChange}
                         placeholder="VD: Nguyễn Văn A"
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -209,7 +255,7 @@ export default function AddBranchPage() {
                         value={formData.managerPhone}
                         onChange={handleChange}
                         placeholder="09xx xxx xxx"
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -221,7 +267,7 @@ export default function AddBranchPage() {
                         value={formData.managerEmail}
                         onChange={handleChange}
                         placeholder="manager@velimou.vn"
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -235,7 +281,7 @@ export default function AddBranchPage() {
                           value={formData.managerPassword}
                           onChange={handleChange}
                           placeholder="VD: 123456aA@"
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
                         />
                         <button
                           type="button"
