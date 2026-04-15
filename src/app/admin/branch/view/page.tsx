@@ -140,10 +140,6 @@ export default function BranchViewPage() {
                 <div className="grid grid-cols-3 gap-y-8 gap-x-12">
                   <InfoBlock label="MÃ CHI NHÁNH" value={branch.code} />
                   <InfoBlock label="TÊN CHI NHÁNH" value={branch.name} />
-                  <InfoBlock
-                    label="QUẢN LÝ CHI NHÁNH"
-                    value={branch.managerName || "Chưa phân công"}
-                  />
                   <InfoBlock label="SỐ ĐIỆN THOẠI" value={branch.phone} />
                   <InfoBlock label="EMAIL CHI NHÁNH" value={branch.email} />
                 </div>

@@ -220,13 +220,6 @@ function BranchCard({ branch }: { branch: Branch }) {
           <PhoneOutlined className="text-[#1677FF] text-[15px]" />
           <span className="text-slate-600 font-bold">{branch.phone}</span>
         </div>
-
-        <div className="flex items-center gap-3">
-          <UserOutlined className="text-[#1677FF] text-[15px]" />
-          <span className="font-black text-slate-800">
-            {branch.managerAccount?.fullName || "Chưa phân công"}
-          </span>
-        </div>
       </div>
 
       <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between px-2">
