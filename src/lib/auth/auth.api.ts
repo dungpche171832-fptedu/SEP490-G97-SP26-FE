@@ -1,5 +1,12 @@
 import axios from "axios";
-import type { LoginPayload, RegisterPayload, LoginResponse, MessageResponse } from "./auth.types";
+import type {
+  LoginPayload,
+  RegisterPayload,
+  LoginResponse,
+  MessageResponse,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+} from "./auth.types";
 
 const authClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
@@ -9,20 +16,30 @@ const authClient = axios.create({
 });
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const { data } = await authClient.post("/api/auth/login", payload);
-
-  if (!data?.accessToken || !data?.user) {
-    throw new Error(data?.message || "Đăng nhập thất bại");
-  }
-
-  return data as LoginResponse;
+  const { data } = await authClient.post<LoginResponse>("/api/auth/login", payload);
+  return data;
 }
 
 export async function register(payload: RegisterPayload): Promise<MessageResponse> {
-  const { data } = await authClient.post("/api/auth/register", payload);
+  const { data } = await authClient.post<MessageResponse>("/api/auth/register", payload);
+  return data;
+}
 
-  if (data?.code && !data?.message) {
-    throw new Error("Đăng ký thất bại");
+export async function forgotPassword(payload: ForgotPasswordPayload): Promise<MessageResponse> {
+  const { data } = await authClient.post("/api/auth/forgot-password", payload);
+
+  if (typeof data === "string") {
+    return { message: data };
+  }
+
+  return data as MessageResponse;
+}
+
+export async function resetPassword(payload: ResetPasswordPayload): Promise<MessageResponse> {
+  const { data } = await authClient.post("/api/auth/reset-password", payload);
+
+  if (typeof data === "string") {
+    return { message: data };
   }
 
   return data as MessageResponse;

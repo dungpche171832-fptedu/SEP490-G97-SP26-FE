@@ -1,6 +1,5 @@
 "use client";
 
-import AuthPage from "./login/page";
 import { ConfigProvider } from "antd";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -24,10 +23,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
         }}
       >
-        <AuthPage></AuthPage>
-        <div style={{ display: "none" }}>{children}</div>
+        {children}
       </div>
     </ConfigProvider>
   );
 }
-

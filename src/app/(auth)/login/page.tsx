@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-// import { loginApi } from "@/lib/apiLogin";
-// import { registerApi } from "@/lib/apiLogin";
 import { login, register } from "@/lib/auth/auth.service";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
+
   return (
     <div className="min-h-[100vh] bg-[#F1F5F9] flex flex-col items-center justify-center p-4 text-black">
       <div className="w-[420px] bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
-        {/* Banner */}
         <div className="px-5 pt-5">
           <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-[#EAF2F8]">
             <Image
@@ -24,7 +24,6 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Title */}
         <div className="pt-6 pb-4 px-6 flex flex-col items-center">
           <div className="flex items-center justify-center gap-2 h-10">
             <Image
@@ -34,7 +33,6 @@ export default function AuthPage() {
               height={22}
               className="shrink-0"
             />
-
             <h1 className="text-[20px] font-bold leading-none text-[#0F172A] tracking-[-0.02em]">
               Xe Limou Việt Trung
             </h1>
@@ -45,7 +43,6 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-gray-200 text-[14px] font-bold px-4 mx-2">
           <button
             onClick={() => setTab("login")}
@@ -69,7 +66,6 @@ export default function AuthPage() {
           </button>
         </div>
 
-        {/* Form */}
         <div className="p-8 pb-10">{tab === "login" ? <LoginForm /> : <RegisterForm />}</div>
       </div>
     </div>
@@ -97,9 +93,7 @@ function Input({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A]
-        focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A]
-        transition-all duration-200"
+        className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A] transition-all duration-200"
       />
     </div>
   );
@@ -113,28 +107,6 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // const handleLogin = async () => {
-  //   setError("");
-  //   setLoading(true);
-
-  //   try {
-  //     const data = await loginApi({ email, password });
-
-  //     localStorage.setItem("token", data.accessToken);
-
-  //     router.push("/home");
-  //   } catch (err: unknown) {
-  //     if (err instanceof Error) {
-  //       setError(err.message);
-  //     } else {
-  //       setError("Đăng nhập thất bại");
-  //     }
-
-  //     setPassword("");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const handleLogin = async () => {
     setError("");
 
@@ -151,8 +123,30 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      await login({ email, password });
-      router.push("/home");
+      const res = await login({ email, password });
+      const role = res.user.role?.toLowerCase();
+
+      if (role === "customer") {
+        router.push("/home");
+        return;
+      }
+
+      if (role === "admin") {
+        router.push("/admin");
+        return;
+      }
+
+      if (role === "staff") {
+        router.push("/staff");
+        return;
+      }
+
+      if (role === "manager") {
+        router.push("/manager");
+        return;
+      }
+
+      setError(`Role không hợp lệ: ${res.user.role}`);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -193,17 +187,17 @@ function LoginForm() {
       <button
         onClick={handleLogin}
         disabled={loading}
-        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
-        !text-white font-bold text-[14px] py-3 rounded-lg
-        transition-all duration-200 active:scale-[0.98]
-        disabled:opacity-60 shadow-sm"
+        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60 shadow-sm"
       >
         {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
 
-      <div className="text-center text-[12.5px] font-medium text-[#94A3B8] mt-5 hover:text-[#0F172A] cursor-pointer transition-colors">
+      <Link
+        href="/forgot-password"
+        className="block w-full text-center text-[12.5px] font-medium text-[#94A3B8] mt-5 hover:text-[#0F172A] cursor-pointer transition-colors"
+      >
         Quên mật khẩu?
-      </div>
+      </Link>
     </div>
   );
 }
@@ -214,14 +208,6 @@ function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
-  // const handleRegister = async () => {
-  //   try {
-  //     await registerApi({ fullName, email, phone, password });
-  //     alert("Đăng ký thành công");
-  //   } catch {
-  //     alert("Đăng ký thất bại");
-  //   }
-  // };
   const handleRegister = async () => {
     try {
       const res = await register({ fullName, email, phone, password });
@@ -269,9 +255,7 @@ function RegisterForm() {
 
       <button
         onClick={handleRegister}
-        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] 
-        !text-white font-bold text-[14px] py-3 rounded-lg
-        transition-all duration-200 active:scale-[0.98] shadow-sm"
+        className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] shadow-sm"
       >
         Đăng ký
       </button>

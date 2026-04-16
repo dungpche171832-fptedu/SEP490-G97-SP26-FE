@@ -1,5 +1,17 @@
-import type { LoginPayload, RegisterPayload, LoginResponse, MessageResponse } from "./auth.types";
-import { login as loginRequest, register as registerRequest } from "./auth.api";
+import type {
+  LoginPayload,
+  RegisterPayload,
+  LoginResponse,
+  MessageResponse,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+} from "./auth.types";
+import {
+  login as loginRequest,
+  register as registerRequest,
+  forgotPassword as forgotPasswordRequest,
+  resetPassword as resetPasswordRequest,
+} from "./auth.api";
 
 const TOKEN_KEY = "token";
 const REFRESH_TOKEN_KEY = "refreshToken";
@@ -10,6 +22,11 @@ const ROLE_KEY = "role";
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function getRole(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ROLE_KEY);
 }
 
 export function setAuthData(response: LoginResponse, email: string): void {
@@ -40,6 +57,14 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
 export async function register(payload: RegisterPayload): Promise<MessageResponse> {
   return await registerRequest(payload);
+}
+
+export async function forgotPassword(payload: ForgotPasswordPayload): Promise<MessageResponse> {
+  return await forgotPasswordRequest(payload);
+}
+
+export async function resetPassword(payload: ResetPasswordPayload): Promise<MessageResponse> {
+  return await resetPasswordRequest(payload);
 }
 
 export const loginAndStore = login;

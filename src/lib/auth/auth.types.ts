@@ -26,3 +26,13 @@ export type LoginResponse = {
 export type MessageResponse = {
   message: string;
 };
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
+export type ResetPasswordPayload = {
+  email: string;
+  otp: string;
+  newPassword: string;
+  confirmPassword: string;
+};
