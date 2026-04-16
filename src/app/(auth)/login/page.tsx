@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { loginApi } from "@/lib/apiLogin";
-import { registerApi } from "@/lib/apiLogin";
+// import { loginApi } from "@/lib/apiLogin";
+// import { registerApi } from "@/lib/apiLogin";
+import { login, register } from "@/lib/auth/auth.service";
 import { useRouter } from "next/navigation";
 export default function AuthPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -112,15 +113,45 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // const handleLogin = async () => {
+  //   setError("");
+  //   setLoading(true);
+
+  //   try {
+  //     const data = await loginApi({ email, password });
+
+  //     localStorage.setItem("token", data.accessToken);
+
+  //     router.push("/home");
+  //   } catch (err: unknown) {
+  //     if (err instanceof Error) {
+  //       setError(err.message);
+  //     } else {
+  //       setError("Đăng nhập thất bại");
+  //     }
+
+  //     setPassword("");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleLogin = async () => {
     setError("");
+
+    if (!email.trim()) {
+      setError("Vui lòng nhập email");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Vui lòng nhập mật khẩu");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const data = await loginApi({ email, password });
-
-      localStorage.setItem("token", data.accessToken);
-
+      await login({ email, password });
       router.push("/home");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -183,12 +214,24 @@ function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
+  // const handleRegister = async () => {
+  //   try {
+  //     await registerApi({ fullName, email, phone, password });
+  //     alert("Đăng ký thành công");
+  //   } catch {
+  //     alert("Đăng ký thất bại");
+  //   }
+  // };
   const handleRegister = async () => {
     try {
-      await registerApi({ fullName, email, phone, password });
-      alert("Đăng ký thành công");
-    } catch {
-      alert("Đăng ký thất bại");
+      const res = await register({ fullName, email, phone, password });
+      alert(res.message || "Đăng ký thành công");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Đăng ký thất bại");
+      }
     }
   };
 

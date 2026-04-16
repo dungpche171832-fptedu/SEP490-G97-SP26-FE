@@ -12,6 +12,17 @@ export type RegisterPayload = {
   password: string;
 };
 
-export type AuthResponse = {
-  token: string;
+export type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: number;
+    fullName: string;
+    role: string;
+    branchId: number | null;
+  };
+};
+
+export type MessageResponse = {
+  message: string;
 };
