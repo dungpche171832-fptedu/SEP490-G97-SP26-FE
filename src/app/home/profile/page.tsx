@@ -9,7 +9,7 @@ import {
   LockOutlined,
 } from "@ant-design/icons";
 
-import ProfileHeader from "@/components/profile/ProfileHeader";
+// import ProfileHeader from "@/components/profile/ProfileHeader";
 import { getAccountInfo, updateProfile, changePassword } from "@/services/account.service";
 
 type Profile = {
@@ -202,7 +202,7 @@ export default function ProfilePage() {
         color: "#0F172A",
       }}
     >
-      <ProfileHeader fullName={fullName} subtitle="Khách hàng thân thiết" />
+      {/* <ProfileHeader fullName={fullName} subtitle="Khách hàng thân thiết" /> */}
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "18px 18px 40px" }}>
         <div style={{ marginBottom: 16 }}>
