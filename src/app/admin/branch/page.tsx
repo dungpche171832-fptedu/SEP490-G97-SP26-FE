@@ -28,14 +28,20 @@ export default function BranchPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  const [userRole, setUserRole] = useState<string>("");
+
   useEffect(() => {
+    // ✅ FIX: Lấy role và ép toàn bộ về CHỮ IN HOA (admin -> ADMIN) để so sánh chuẩn xác
+    const storedRole = localStorage.getItem("role") || "";
+    setUserRole(storedRole.toUpperCase());
+
     const fetchBranches = async () => {
       try {
         setLoading(true);
         const data = await getAllBranches();
         setBranches(data || []);
       } catch (err) {
-        console.error(err); // Sửa lỗi biến err không được dùng
+        console.error(err);
         setError("Không thể tải danh sách chi nhánh.");
       } finally {
         setLoading(false);
@@ -74,11 +80,14 @@ export default function BranchPage() {
               </p>
             </div>
 
-            <Link href="/admin/branch/add">
-              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                <PlusOutlined /> Thêm chi nhánh
-              </button>
-            </Link>
+            {/* Chỉ ADMIN mới thấy nút Thêm chi nhánh */}
+            {userRole === "ADMIN" && (
+              <Link href="/admin/branch/add">
+                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                  <PlusOutlined /> Thêm chi nhánh
+                </button>
+              </Link>
+            )}
           </div>
 
           {/* FILTER BAR */}
@@ -102,10 +111,11 @@ export default function BranchPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {currentBranches.length > 0 ? (
-                  currentBranches.map((branch) => <BranchCard key={branch.id} branch={branch} />)
+                  currentBranches.map((branch) => (
+                    <BranchCard key={branch.id} branch={branch} userRole={userRole} />
+                  ))
                 ) : (
                   <div className="col-span-full py-20 text-center text-slate-500 font-bold bg-white rounded-2xl border border-slate-200 shadow-sm">
-                    {/* ✅ Sửa lỗi HTML Unescaped Entities ở dòng dưới */}
                     Không tìm thấy chi nhánh nào phù hợp với &quot;{searchText}&quot;.
                   </div>
                 )}
@@ -184,7 +194,7 @@ export default function BranchPage() {
   );
 }
 
-function BranchCard({ branch }: { branch: Branch }) {
+function BranchCard({ branch, userRole }: { branch: Branch; userRole: string }) {
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
       <div className="flex justify-between items-start mb-6">
@@ -222,13 +232,19 @@ function BranchCard({ branch }: { branch: Branch }) {
         </div>
       </div>
 
-      <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between px-2">
-        <Link
-          href={`/admin/branch/edit?id=${branch.id}`}
-          className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-[#1677FF] hover:bg-blue-50 transition-colors rounded-full"
-        >
-          <EditOutlined className="text-[16px]" /> SỬA
-        </Link>
+      <div
+        className={`mt-6 pt-3 border-t border-slate-100 flex items-center px-2 ${
+          userRole === "ADMIN" ? "justify-between" : "justify-center"
+        }`}
+      >
+        {userRole === "ADMIN" && (
+          <Link
+            href={`/admin/branch/edit?id=${branch.id}`}
+            className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-[#1677FF] hover:bg-blue-50 transition-colors rounded-full"
+          >
+            <EditOutlined className="text-[16px]" /> SỬA
+          </Link>
+        )}
 
         <Link
           href={`/admin/branch/view?id=${branch.id}`}
@@ -237,9 +253,11 @@ function BranchCard({ branch }: { branch: Branch }) {
           <EyeOutlined className="text-[16px]" /> CHI TIẾT
         </Link>
 
-        <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
-          <DeleteOutlined className="text-[16px]" /> XÓA
-        </button>
+        {userRole === "ADMIN" && (
+          <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
+            <DeleteOutlined className="text-[16px]" /> XÓA
+          </button>
+        )}
       </div>
     </div>
   );
