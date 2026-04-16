@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { forgotPassword, resetPassword } from "@/lib/auth/auth.service";
 
 function Input({
@@ -47,24 +49,17 @@ export default function ForgotPasswordPage() {
   const handleSendOtp = async () => {
     setError("");
     setSuccess("");
-
     if (!email.trim()) {
       setError("Vui lòng nhập email");
       return;
     }
-
     setLoading(true);
-
     try {
       const res = await forgotPassword({ email });
       setSuccess(res.message || "Đã gửi OTP tới email");
       setStep(2);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Gửi OTP thất bại");
-      }
+      setError(err instanceof Error ? err.message : "Gửi OTP thất bại");
     } finally {
       setLoading(false);
     }
@@ -74,137 +69,136 @@ export default function ForgotPasswordPage() {
     setError("");
     setSuccess("");
 
-    if (!email.trim()) {
-      setError("Vui lòng nhập email");
+    if (!email.trim() || !otp.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+      setError("Vui lòng nhập đầy đủ thông tin");
       return;
     }
-
-    if (!otp.trim()) {
-      setError("Vui lòng nhập OTP");
-      return;
-    }
-
-    if (!newPassword.trim()) {
-      setError("Vui lòng nhập mật khẩu mới");
-      return;
-    }
-
-    if (!confirmPassword.trim()) {
-      setError("Vui lòng xác nhận mật khẩu mới");
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setError("Xác nhận mật khẩu không khớp");
       return;
     }
 
     setLoading(true);
-
     try {
-      const res = await resetPassword({
-        email,
-        otp,
-        newPassword,
-        confirmPassword,
-      });
-
+      const res = await resetPassword({ email, otp, newPassword, confirmPassword });
       setSuccess(res.message || "Đổi mật khẩu thành công");
-
-      setTimeout(() => {
-        router.push("/login");
-      }, 1200);
+      setTimeout(() => router.push("/auth"), 1500);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Đổi mật khẩu thất bại");
-      }
+      setError(err instanceof Error ? err.message : "Đổi mật khẩu thất bại");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center p-4">
-      <div className="w-full max-w-[420px] bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-gray-100 p-8">
-        <h1 className="text-[24px] font-bold text-center text-[#0F172A] mb-2">Quên mật khẩu</h1>
-
-        <p className="text-center text-[14px] text-[#64748B] mb-6">
-          {step === 1 ? "Nhập email để nhận mã OTP" : "Nhập OTP và mật khẩu mới"}
-        </p>
-
-        <Input
-          label="Email"
-          placeholder="Nhập email của bạn"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        {step === 2 && (
-          <>
-            <Input
-              label="Mã OTP"
-              placeholder="Nhập mã OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+    <div className="min-h-[100vh] bg-[#F1F5F9] flex flex-col items-center justify-center p-4 text-black">
+      <div className="w-[420px] bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-100">
+        {/* Banner Image - Giống Login */}
+        <div className="px-5 pt-5">
+          <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-[#EAF2F8]">
+            <Image
+              src="/images/bus3.png"
+              alt="Bus"
+              fill
+              priority
+              className="object-cover object-center"
             />
-
-            <Input
-              label="Mật khẩu mới"
-              placeholder="Nhập mật khẩu mới"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-
-            <Input
-              label="Xác nhận mật khẩu mới"
-              placeholder="Nhập lại mật khẩu mới"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </>
-        )}
-
-        {error && (
-          <div className="mb-4 bg-red-50 text-red-600 text-sm px-3 py-2 rounded-md border border-red-200">
-            {error}
           </div>
-        )}
+        </div>
 
-        {success && (
-          <div className="mb-4 bg-green-50 text-green-600 text-sm px-3 py-2 rounded-md border border-green-200">
-            {success}
+        {/* Header - Giống Login */}
+        <div className="pt-6 pb-4 px-6 flex flex-col items-center">
+          <div className="flex items-center justify-center gap-2 h-10">
+            <Image
+              src="/icons/busicon1.svg"
+              alt="Bus Icon"
+              width={22}
+              height={22}
+              className="shrink-0"
+            />
+            <h1 className="text-[20px] font-bold leading-none text-[#0F172A] tracking-[-0.02em]">
+              {step === 1 ? "Quên mật khẩu" : "Đặt lại mật khẩu"}
+            </h1>
           </div>
-        )}
+          <p className="mt-1.5 text-center text-[13px] font-medium text-[#64748B]">
+            {step === 1
+              ? "Hệ thống sẽ gửi mã xác thực đến email của bạn"
+              : "Vui lòng nhập mã OTP và thiết lập mật khẩu mới"}
+          </p>
+        </div>
 
-        {step === 1 ? (
-          <button
-            onClick={handleSendOtp}
-            disabled={loading}
-            className="w-full mt-2 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60 shadow-sm"
-          >
-            {loading ? "Đang gửi OTP..." : "Gửi OTP"}
-          </button>
-        ) : (
-          <button
-            onClick={handleResetPassword}
-            disabled={loading}
-            className="w-full mt-2 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60 shadow-sm"
-          >
-            {loading ? "Đang đổi mật khẩu..." : "Đổi mật khẩu"}
-          </button>
-        )}
+        <div className="h-[1px] bg-gray-100 mx-8 mb-6" />
 
-        <button
-          onClick={() => router.push("/login")}
-          className="w-full mt-6 text-[14px] text-[#64748B] hover:text-[#0F172A] font-medium transition-colors"
-        >
-          Quay lại đăng nhập
-        </button>
+        {/* Form Content */}
+        <div className="p-8 pt-0 pb-10">
+          <div className="space-y-2">
+            <Input
+              label="Email"
+              placeholder="Nhập email của bạn"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            {step === 2 && (
+              <>
+                <Input
+                  label="Mã OTP"
+                  placeholder="Nhập mã OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+                <Input
+                  label="Mật khẩu mới"
+                  placeholder="Nhập mật khẩu mới"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <Input
+                  label="Xác nhận mật khẩu"
+                  placeholder="Nhập lại mật khẩu mới"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </>
+            )}
+
+            {/* Thông báo lỗi/thành công style chuẩn */}
+            {error && (
+              <div className="bg-red-50 text-red-600 text-[13px] px-3 py-2.5 rounded-lg border border-red-100 mt-2">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 text-green-600 text-[13px] px-3 py-2.5 rounded-lg border border-green-100 mt-2">
+                {success}
+              </div>
+            )}
+
+            <button
+              onClick={step === 1 ? handleSendOtp : handleResetPassword}
+              disabled={loading}
+              className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60 shadow-sm"
+            >
+              {loading
+                ? step === 1
+                  ? "Đang gửi..."
+                  : "Đang xử lý..."
+                : step === 1
+                  ? "Gửi mã OTP"
+                  : "Xác nhận đổi mật khẩu"}
+            </button>
+
+            <Link
+              href="/login"
+              className="block w-full text-center text-[12.5px] font-medium text-[#94A3B8] mt-5 hover:text-[#0F172A] cursor-pointer transition-colors"
+            >
+              Quay lại đăng nhập
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
