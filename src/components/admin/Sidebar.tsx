@@ -3,6 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FlagOutlined } from "@ant-design/icons";
 
 const NavItem = ({
   icon,
@@ -63,6 +64,13 @@ export default function Sidebar() {
           label="Xe"
           href="/admin/car"
           active={pathname?.startsWith("/admin/car")}
+        />
+
+        <NavItem
+          icon={<FlagOutlined style={{ fontSize: "20px" }} />}
+          label="Điểm dừng"
+          href="/admin/station"
+          active={pathname?.startsWith("/admin/station")}
         />
       </nav>
     </aside>
