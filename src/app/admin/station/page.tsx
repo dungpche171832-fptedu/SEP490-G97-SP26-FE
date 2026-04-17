@@ -22,26 +22,11 @@ export interface City {
   name: string;
 }
 
-// 🔴 Hàm mô phỏng lấy thông tin User (Thay bằng logic thật của hệ thống)
-const getCurrentUser = () => {
-  if (typeof window !== "undefined") {
-    const user = localStorage.getItem("user");
-    // Mặc định trả về ADMIN để test. Bạn có thể đổi thành "MANAGER_BRANCH" để kiểm tra giao diện.
-    return user ? JSON.parse(user) : { role: "ADMIN", branchId: 1, branchName: "Hà Nội" };
-  }
-  return null;
-};
-
 export default function StationManagementPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // ✅ Lấy Role từ User
-  const user = getCurrentUser();
-  const isAdmin = user?.role === "ADMIN";
-  const isManager = user?.role === "MANAGER_BRANCH";
 
   // Pagination & Filter States
   const [searchText, setSearchText] = useState("");
@@ -72,7 +57,7 @@ export default function StationManagementPage() {
     fetchStationsData();
   }, []);
 
-  // ✅ BẢNG PHÂN QUYỀN: Cả Admin và Manager đều xem được "Tất cả" các trạm
+  // Lọc dữ liệu không cần check Role nữa
   const filteredStations = stations.filter((s) => {
     const matchSearch =
       s.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -107,23 +92,19 @@ export default function StationManagementPage() {
                 DANH SÁCH ĐIỂM DỪNG
               </h2>
               <p className="text-slate-500 mt-1 text-[14px]">
-                {isAdmin
-                  ? "Quản lý danh mục các trạm dừng, bến đỗ toàn hệ thống."
-                  : "Xem danh sách trạm phục vụ điều tuyến."}
+                Quản lý danh mục các trạm dừng, bến đỗ toàn hệ thống.
               </p>
             </div>
 
-            {/* ✅ BẢNG PHÂN QUYỀN: Chỉ ADMIN mới được thêm trạm mới */}
-            {isAdmin && (
-              <Link href="/admin/station/add">
-                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                  <PlusOutlined /> Thêm điểm dừng
-                </button>
-              </Link>
-            )}
+            {/* Đã bỏ check isAdmin, ai vào cũng thấy nút Thêm */}
+            <Link href="/admin/station/add">
+              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                <PlusOutlined /> Thêm điểm dừng
+              </button>
+            </Link>
           </div>
 
-          {/* FILTER BAR (Cả 2 role đều thấy) */}
+          {/* FILTER BAR */}
           <div className="flex items-center gap-4 mb-8">
             <div className="relative w-[400px]">
               <SearchOutlined className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 z-10" />
@@ -174,8 +155,8 @@ export default function StationManagementPage() {
               {filteredStations.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                   {currentStations.map((station) => (
-                    // ✅ Truyền userRole vào Card để phân quyền nút Xóa
-                    <StationCard key={station.id} station={station} userRole={user?.role} />
+                    // Đã bỏ truyền userRole vào Card
+                    <StationCard key={station.id} station={station} />
                   ))}
                 </div>
               ) : (
@@ -258,9 +239,8 @@ export default function StationManagementPage() {
 }
 
 // === COMPONENT THẺ ĐIỂM DỪNG (STATION CARD) ===
-function StationCard({ station, userRole }: { station: Station; userRole?: string }) {
-  const isAdmin = userRole === "ADMIN";
-
+// Đã bỏ prop userRole
+function StationCard({ station }: { station: Station }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col group h-full">
       {/* Card Header */}
@@ -305,7 +285,6 @@ function StationCard({ station, userRole }: { station: Station; userRole?: strin
           <EyeOutlined className="text-[16px]" /> CHI TIẾT
         </Link>
 
-        {/* Nút Sửa: Theo bảng phân quyền, cả 2 đều có quyền ấn nút Sửa để vào màn hình form (khóa form sẽ xử lý bên trong màn hình Sửa) */}
         <Link
           href={`/admin/station/edit?id=${station.id}`}
           className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-[#1677FF] hover:bg-blue-50 transition-colors rounded-full"
@@ -313,12 +292,10 @@ function StationCard({ station, userRole }: { station: Station; userRole?: strin
           <EditOutlined className="text-[16px]" /> SỬA
         </Link>
 
-        {/* ✅ BẢNG PHÂN QUYỀN: Chỉ Admin mới có quyền xóa điểm dừng */}
-        {isAdmin && (
-          <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
-            <DeleteOutlined className="text-[16px]" /> XÓA
-          </button>
-        )}
+        {/* Đã bỏ check isAdmin, luôn hiện nút XÓA */}
+        <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
+          <DeleteOutlined className="text-[16px]" /> XÓA
+        </button>
       </div>
     </div>
   );
