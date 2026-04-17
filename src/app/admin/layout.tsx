@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         },
       }}
     >
-      <RoleGuard allowedRoles={["admin"]}>
+      <RoleGuard allowedRoles={["admin", "staff", "manager"]}>
         <div className="flex min-h-screen">
           <Sidebar />
 
