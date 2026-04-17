@@ -54,6 +54,11 @@ export function clearToken(): void {
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await loginRequest(payload);
+
+  if (!response?.accessToken || !response?.user) {
+    throw new Error("Sai tài khoản hoặc mật khẩu");
+  }
+
   setAuthData(response, payload.email);
   return response;
 }

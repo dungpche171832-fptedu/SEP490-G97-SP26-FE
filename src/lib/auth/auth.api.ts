@@ -45,8 +45,13 @@ function handleBusinessError(data: unknown, defaultMsg: string): ApiResponse {
 // ================= API =================
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const { data } = await authClient.post<LoginResponse>("/api/auth/login", payload);
-  return data;
+  const { data } = await authClient.post("/api/auth/login", payload);
+
+  if (!data?.accessToken || !data?.user) {
+    throw new Error(data?.message || "Sai tài khoản hoặc mật khẩu");
+  }
+
+  return data as LoginResponse;
 }
 
 export async function register(payload: RegisterPayload): Promise<MessageResponse> {
