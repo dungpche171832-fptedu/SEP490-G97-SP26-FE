@@ -15,8 +15,6 @@ import {
 
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
-
-// ✅ 1. Import hàm gọi API thật từ service
 import { getStations, Station } from "@/services/station.service";
 
 export interface City {
@@ -24,11 +22,26 @@ export interface City {
   name: string;
 }
 
+// 🔴 Hàm mô phỏng lấy thông tin User (Thay bằng logic thật của hệ thống)
+const getCurrentUser = () => {
+  if (typeof window !== "undefined") {
+    const user = localStorage.getItem("user");
+    // Mặc định trả về ADMIN để test. Bạn có thể đổi thành "MANAGER_BRANCH" để kiểm tra giao diện.
+    return user ? JSON.parse(user) : { role: "ADMIN", branchId: 1, branchName: "Hà Nội" };
+  }
+  return null;
+};
+
 export default function StationManagementPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ Lấy Role từ User
+  const user = getCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
+  const isManager = user?.role === "MANAGER_BRANCH";
 
   // Pagination & Filter States
   const [searchText, setSearchText] = useState("");
@@ -36,17 +49,12 @@ export default function StationManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // ✅ 2. Hàm gọi API lấy dữ liệu thật
   const fetchStationsData = async () => {
     try {
       setLoading(true);
-
-      // Gọi API lấy toàn bộ danh sách trạm từ Backend Spring Boot
       const response = await getStations();
       setStations(response.stations || []);
 
-      // TODO: Nếu Backend của bạn có API lấy City (VD: getCities()), hãy gọi ở đây
-      // Hiện tại chúng ta dùng fix cứng khớp với DB bạn vừa tạo để chạy được Filter
       setCities([
         { id: 1, name: "Hà Nội (Việt Nam)" },
         { id: 2, name: "Lạng Sơn (Việt Nam)" },
@@ -64,26 +72,24 @@ export default function StationManagementPage() {
     fetchStationsData();
   }, []);
 
-  // LỌC KẾT HỢP: Tên/Mã trạm + Thành phố (Lọc Client Side)
+  // ✅ BẢNG PHÂN QUYỀN: Cả Admin và Manager đều xem được "Tất cả" các trạm
   const filteredStations = stations.filter((s) => {
     const matchSearch =
       s.name.toLowerCase().includes(searchText.toLowerCase()) ||
       s.code.toLowerCase().includes(searchText.toLowerCase());
 
-    // So sánh cityId (nếu Backend không trả về cityId ở list thì so sánh cityName)
     const matchCity =
       selectedCityId === "all" || s.cityName === cities.find((c) => c.id === selectedCityId)?.name;
 
     return matchSearch && matchCity;
   });
 
-  // Phân trang
   const totalPages = Math.ceil(filteredStations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentStations = filteredStations.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset về trang 1 khi search hoặc đổi bộ lọc
+    setCurrentPage(1);
   }, [searchText, selectedCityId]);
 
   return (
@@ -101,20 +107,24 @@ export default function StationManagementPage() {
                 DANH SÁCH ĐIỂM DỪNG
               </h2>
               <p className="text-slate-500 mt-1 text-[14px]">
-                Quản lý danh mục các trạm dừng, bến đỗ và điểm đón/trả khách.
+                {isAdmin
+                  ? "Quản lý danh mục các trạm dừng, bến đỗ toàn hệ thống."
+                  : "Xem danh sách trạm phục vụ điều tuyến."}
               </p>
             </div>
 
-            <Link href="/admin/station/add">
-              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                <PlusOutlined /> Thêm điểm dừng
-              </button>
-            </Link>
+            {/* ✅ BẢNG PHÂN QUYỀN: Chỉ ADMIN mới được thêm trạm mới */}
+            {isAdmin && (
+              <Link href="/admin/station/add">
+                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                  <PlusOutlined /> Thêm điểm dừng
+                </button>
+              </Link>
+            )}
           </div>
 
-          {/* FILTER BAR */}
+          {/* FILTER BAR (Cả 2 role đều thấy) */}
           <div className="flex items-center gap-4 mb-8">
-            {/* Search Input */}
             <div className="relative w-[400px]">
               <SearchOutlined className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 z-10" />
               <input
@@ -126,7 +136,6 @@ export default function StationManagementPage() {
               />
             </div>
 
-            {/* City Selector */}
             <div className="relative min-w-[220px]">
               <select
                 value={selectedCityId}
@@ -165,7 +174,8 @@ export default function StationManagementPage() {
               {filteredStations.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                   {currentStations.map((station) => (
-                    <StationCard key={station.id} station={station} />
+                    // ✅ Truyền userRole vào Card để phân quyền nút Xóa
+                    <StationCard key={station.id} station={station} userRole={user?.role} />
                   ))}
                 </div>
               ) : (
@@ -248,7 +258,9 @@ export default function StationManagementPage() {
 }
 
 // === COMPONENT THẺ ĐIỂM DỪNG (STATION CARD) ===
-function StationCard({ station }: { station: Station }) {
+function StationCard({ station, userRole }: { station: Station; userRole?: string }) {
+  const isAdmin = userRole === "ADMIN";
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col group h-full">
       {/* Card Header */}
@@ -292,15 +304,21 @@ function StationCard({ station }: { station: Station }) {
         >
           <EyeOutlined className="text-[16px]" /> CHI TIẾT
         </Link>
+
+        {/* Nút Sửa: Theo bảng phân quyền, cả 2 đều có quyền ấn nút Sửa để vào màn hình form (khóa form sẽ xử lý bên trong màn hình Sửa) */}
         <Link
           href={`/admin/station/edit?id=${station.id}`}
           className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-[#1677FF] hover:bg-blue-50 transition-colors rounded-full"
         >
           <EditOutlined className="text-[16px]" /> SỬA
         </Link>
-        <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
-          <DeleteOutlined className="text-[16px]" /> XÓA
-        </button>
+
+        {/* ✅ BẢNG PHÂN QUYỀN: Chỉ Admin mới có quyền xóa điểm dừng */}
+        {isAdmin && (
+          <button className="flex items-center gap-2 p-2 text-xs font-black text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-full">
+            <DeleteOutlined className="text-[16px]" /> XÓA
+          </button>
+        )}
       </div>
     </div>
   );

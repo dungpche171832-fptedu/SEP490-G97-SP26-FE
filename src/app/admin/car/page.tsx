@@ -17,11 +17,27 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import { getCars, getBranchesForSelect, Car, Branch } from "@/services/car.service";
 
+// 🔴 Hàm mô phỏng lấy thông tin User đang đăng nhập.
+// Duy cần thay thế logic này bằng Context hoặc Redux để lấy user thật sau login.
+const getCurrentUser = () => {
+  if (typeof window !== "undefined") {
+    const user = localStorage.getItem("user");
+    // Giả lập mặc định là ADMIN nếu không có data. Đổi thành MANAGER_BRANCH để test role kia.
+    return user ? JSON.parse(user) : { role: "ADMIN", branchId: 1, branchName: "Hà Nội" };
+  }
+  return null;
+};
+
 export default function CarManagementPage() {
   const [cars, setCars] = useState<Car[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]); // Lưu danh sách chi nhánh
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Lấy Role từ User
+  const user = getCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
+  const isManager = user?.role === "MANAGER_BRANCH";
 
   // Pagination & Filter States
   const [searchText, setSearchText] = useState("");
@@ -36,6 +52,11 @@ export default function CarManagementPage() {
         const [carsData, branchesData] = await Promise.all([getCars(), getBranchesForSelect()]);
         setCars(carsData.cars || []);
         setBranches(branchesData || []);
+
+        // Tự động set chi nhánh nếu là Manager
+        if (isManager && user?.branchId) {
+          setSelectedBranchId(user.branchId);
+        }
       } catch (err) {
         console.error(err);
         setError("Không thể tải dữ liệu");
@@ -44,12 +65,18 @@ export default function CarManagementPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [isManager, user?.branchId]);
 
-  // ✅ LOGIC LỌC KẾT HỢP: Biển số xe + Chi nhánh
+  // ✅ LOGIC LỌC KẾT HỢP: Biển số xe + Chi nhánh (Phân quyền)
   const filteredCars = cars.filter((c) => {
     const matchSearch = c.licensePlate.toLowerCase().includes(searchText.toLowerCase());
-    const matchBranch = selectedBranchId === "all" || c.branch?.id === selectedBranchId;
+
+    // Nếu Manager: Bắt buộc branch.id phải bằng branchId của Manager
+    // Nếu Admin: Có thể chọn "all" hoặc theo dropdown
+    const matchBranch = isManager
+      ? c.branch?.id === user?.branchId
+      : selectedBranchId === "all" || c.branch?.id === selectedBranchId;
+
     return matchSearch && matchBranch;
   });
 
@@ -59,7 +86,7 @@ export default function CarManagementPage() {
   const currentCars = filteredCars.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset về trang 1 khi search hoặc đổi chi nhánh
+    setCurrentPage(1);
   }, [searchText, selectedBranchId]);
 
   return (
@@ -74,23 +101,26 @@ export default function CarManagementPage() {
           <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
-                DANH SÁCH XE
+                DANH SÁCH XE {isManager && `- CHI NHÁNH ${user?.branchName}`}
               </h2>
               <p className="text-slate-500 mt-1 text-[14px]">
-                Quản lý đội xe và trạng thái vận hành hiện tại.
+                {isAdmin
+                  ? "Giám sát đội xe toàn hệ thống."
+                  : "Quản lý đội xe và trạng thái vận hành chi nhánh."}
               </p>
             </div>
 
-            <Link href="/admin/car/add">
-              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                <PlusOutlined /> Thêm xe
-              </button>
-            </Link>
+            {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Thêm xe */}
+            {isManager && (
+              <Link href="/admin/car/add">
+                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                  <PlusOutlined /> Thêm xe
+                </button>
+              </Link>
+            )}
           </div>
 
-          {/* ✅ FILTER BAR: Cải thiện độ tương phản màu chữ */}
           <div className="flex items-center gap-4 mb-8">
-            {/* Search Input */}
             <div className="relative w-[400px]">
               <SearchOutlined className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 z-10" />
               <input
@@ -98,29 +128,30 @@ export default function CarManagementPage() {
                 placeholder="Tìm kiếm theo biển số xe..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                // text-slate-900 và font-bold giúp chữ nổi bật trên screen
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
               />
             </div>
 
-            {/* Branch Selector */}
-            <div className="relative min-w-[220px]">
-              <select
-                value={selectedBranchId}
-                onChange={(e) =>
-                  setSelectedBranchId(e.target.value === "all" ? "all" : Number(e.target.value))
-                }
-                className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm cursor-pointer pr-10"
-              >
-                <option value="all">Tất cả chi nhánh</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <DownOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] pointer-events-none" />
-            </div>
+            {/* ✅ PHÂN QUYỀN: Chỉ Admin mới thấy bộ lọc Chi nhánh */}
+            {isAdmin && (
+              <div className="relative min-w-[220px]">
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) =>
+                    setSelectedBranchId(e.target.value === "all" ? "all" : Number(e.target.value))
+                  }
+                  className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm cursor-pointer pr-10"
+                >
+                  <option value="all">Tất cả chi nhánh</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <DownOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] pointer-events-none" />
+              </div>
+            )}
           </div>
 
           {/* MAIN CONTENT */}
@@ -136,7 +167,8 @@ export default function CarManagementPage() {
               {filteredCars.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                   {currentCars.map((car) => (
-                    <CarCard key={car.id} car={car} />
+                    // ✅ Truyền userRole xuống Card để xử lý nút Sửa/Xóa
+                    <CarCard key={car.id} car={car} userRole={user?.role} />
                   ))}
                 </div>
               ) : (
@@ -173,7 +205,6 @@ export default function CarManagementPage() {
                         <path d="M15 18l-6-6 6-6" />
                       </svg>
                     </button>
-                    {/* ... (Các nút số trang giữ nguyên) */}
                     {[...Array(totalPages)].map((_, index) => {
                       const page = index + 1;
                       return (
@@ -219,8 +250,8 @@ export default function CarManagementPage() {
   );
 }
 
-// Giữ nguyên component CarCard bên dưới...
-function CarCard({ car }: { car: Car }) {
+// ✅ Cập nhật Component CarCard để nhận prop userRole
+function CarCard({ car, userRole }: { car: Car; userRole?: string }) {
   const formatPlate = (plate: string) => {
     if (!plate) return "—";
     if (plate.includes("-")) {
@@ -231,10 +262,10 @@ function CarCard({ car }: { car: Car }) {
   };
 
   const getCoverImage = (type: string) => {
-    const carType = type.toUpperCase();
+    const carType = type ? type.toUpperCase() : "";
     if (carType.includes("LIMO")) return "/images/bus3.png";
-    if (carType.includes("SLEEPER")) return "/images/bus3.png"; // Có thể đổi sau
-    if (carType.includes("SEAT")) return "/images/bus3.png"; // Có thể đổi sau
+    if (carType.includes("SLEEPER")) return "/images/bus3.png";
+    if (carType.includes("SEAT")) return "/images/bus3.png";
     return "/images/bus3.png";
   };
 
@@ -250,7 +281,7 @@ function CarCard({ car }: { car: Car }) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
         <div className="absolute top-4 left-4 bg-[#1677FF] text-white px-2.5 py-1 rounded-[6px] text-[10px] font-black tracking-widest uppercase shadow-sm">
-          {car.carType}
+          {car.carType || "N/A"}
         </div>
         <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5">
           <span
@@ -276,7 +307,7 @@ function CarCard({ car }: { car: Car }) {
               <UserOutlined className="text-[14px]" />
               Số ghế:
             </div>
-            <span className="font-black text-slate-800">{car.totalSeat} Chỗ</span>
+            <span className="font-black text-slate-800">{car.totalSeat || 0} Chỗ</span>
           </div>
           <div className="flex justify-between items-center text-[13px]">
             <div className="flex items-center gap-2 text-slate-500 font-bold">
@@ -295,15 +326,21 @@ function CarCard({ car }: { car: Car }) {
           >
             <EyeOutlined className="text-[18px]" />
           </Link>
-          <Link
-            href={`/admin/car/edit?id=${car.id}`}
-            className="text-slate-400 hover:text-[#1677FF] transition-colors p-2 rounded-full hover:bg-blue-50"
-          >
-            <EditOutlined className="text-[18px]" />
-          </Link>
-          <button className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
-            <DeleteOutlined className="text-[18px]" />
-          </button>
+
+          {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Sửa/Xóa */}
+          {userRole === "MANAGER_BRANCH" && (
+            <>
+              <Link
+                href={`/admin/car/edit?id=${car.id}`}
+                className="text-slate-400 hover:text-[#1677FF] transition-colors p-2 rounded-full hover:bg-blue-50"
+              >
+                <EditOutlined className="text-[18px]" />
+              </Link>
+              <button className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
+                <DeleteOutlined className="text-[18px]" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
