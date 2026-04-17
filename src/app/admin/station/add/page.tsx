@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftOutlined,
@@ -13,7 +13,7 @@ import axios from "axios";
 
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
-import { addStation } from "@/services/station.service";
+import { addStation, getCities, City } from "@/services/station.service";
 
 // Định nghĩa interface để fix lỗi 'any'
 interface NominatimResult {
@@ -37,8 +37,10 @@ export default function AddStationPage() {
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: "", text: "" });
 
   const [searchQuery, setSearchQuery] = useState("");
-  // Thay đổi any[] thành NominatimResult[]
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+
+  // ✅ BƯỚC 1: Thay đổi mảng tĩnh thành State rỗng
+  const [cities, setCities] = useState<City[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -49,11 +51,18 @@ export default function AddStationPage() {
     longitude: 105.804817,
   });
 
-  const cities = [
-    { id: 1, name: "Hà Nội (Việt Nam)" },
-    { id: 2, name: "Lạng Sơn (Việt Nam)" },
-    { id: 3, name: "Nanning (China)" },
-  ];
+  // ✅ BƯỚC 2: Thêm useEffect để tự động gọi Service khi load trang
+  useEffect(() => {
+    const loadCities = async () => {
+      try {
+        const data = await getCities();
+        setCities(data); // Đổ dữ liệu thật từ DB vào đây
+      } catch (error) {
+        console.error("Không thể lấy danh sách tỉnh thành từ DB:", error);
+      }
+    };
+    loadCities();
+  }, []);
 
   const handleAddressSearch = async () => {
     if (!searchQuery.trim()) return;
