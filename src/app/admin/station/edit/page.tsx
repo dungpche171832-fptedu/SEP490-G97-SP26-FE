@@ -14,7 +14,14 @@ import axios from "axios";
 
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
-import { getStationDetail, updateStation, NominatimResult } from "@/services/station.service";
+// ✅ Import thêm getCities và City từ service giống màn Add
+import {
+  getStationDetail,
+  updateStation,
+  getCities,
+  City,
+  NominatimResult,
+} from "@/services/station.service";
 
 const MapComponent = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
@@ -35,8 +42,10 @@ function EditStationContent() {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const [searchQuery, setSearchQuery] = useState("");
-  // FIX: Thay any[] bằng NominatimResult[]
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+
+  // ✅ ĐỒNG BỘ MÀN ADD: State danh sách cities từ DB
+  const [cities, setCities] = useState<City[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -47,14 +56,9 @@ function EditStationContent() {
     longitude: 105.804817,
   });
 
-  const cities = [
-    { id: 1, name: "Hà Nội (Việt Nam)" },
-    { id: 2, name: "Lạng Sơn (Việt Nam)" },
-    { id: 3, name: "Nanning (China)" },
-  ];
-
+  // ✅ ĐỒNG BỘ MÀN ADD: Load danh sách thành phố và chi tiết trạm dừng
   useEffect(() => {
-    const fetchStation = async () => {
+    const fetchData = async () => {
       if (!id) {
         setMessage({ type: "error", text: "Thiếu ID trạm dừng trên đường dẫn!" });
         setIsLoading(false);
@@ -62,29 +66,38 @@ function EditStationContent() {
       }
       try {
         setIsLoading(true);
-        const data = await getStationDetail(Number(id));
+        // Chạy song song cả 2 API để tối ưu tốc độ
+        const [stationData, citiesData] = await Promise.all([
+          getStationDetail(Number(id)),
+          getCities(),
+        ]);
+
+        setCities(citiesData || []);
+
         setFormData({
-          name: data.name,
-          code: data.code,
-          cityId: data.cityId.toString(),
-          address: data.address || "",
-          latitude: data.latitude,
-          longitude: data.longitude,
+          name: stationData.name,
+          code: stationData.code,
+          cityId: stationData.cityId.toString(),
+          address: stationData.address || "",
+          latitude: stationData.latitude,
+          longitude: stationData.longitude,
         });
+
+        // Hiển thị địa chỉ hiện tại lên thanh search để đồng bộ
+        setSearchQuery(stationData.address || "");
       } catch (error: unknown) {
         console.error("Fetch error:", error);
-        setMessage({ type: "error", text: "Lỗi: Không tìm thấy trạm dừng này." });
+        setMessage({ type: "error", text: "Lỗi: Không thể tải dữ liệu từ hệ thống." });
       } finally {
         setIsLoading(false);
       }
     };
-    fetchStation();
+    fetchData();
   }, [id]);
 
   const handleAddressSearch = async () => {
     if (!searchQuery.trim()) return;
     try {
-      // FIX: Định nghĩa kiểu cho axios
       const res = await axios.get<NominatimResult[]>(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=vn,cn`,
       );
@@ -94,7 +107,6 @@ function EditStationContent() {
     }
   };
 
-  // FIX: Thay any bằng NominatimResult
   const handleSelectPlace = (place: NominatimResult) => {
     const lat = parseFloat(place.lat);
     const lon = parseFloat(place.lon);
@@ -133,7 +145,6 @@ function EditStationContent() {
       setMessage({ type: "success", text: "Cập nhật trạm dừng thành công!" });
       setTimeout(() => router.push("/admin/station"), 1500);
     } catch (error: unknown) {
-      // FIX: Tránh dùng any trong catch
       const errorMsg = error instanceof Error ? error.message : "Lỗi cập nhật dữ liệu.";
       setMessage({ type: "error", text: errorMsg });
       setIsSubmitting(false);
@@ -148,43 +159,46 @@ function EditStationContent() {
       <div className="flex h-screen items-center justify-center bg-white ml-64 text-slate-900 font-bold">
         <div className="text-center">
           <LoadingOutlined className="text-4xl text-blue-600 mb-4" />
-          <p className="tracking-widest uppercase text-xs">Đang tải dữ liệu trạm dừng...</p>
+          <p className="tracking-widest uppercase text-xs">Đang lấy dữ liệu trạm dừng...</p>
         </div>
       </div>
     );
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-slate-900">
+    <div className="flex h-screen bg-[#F8FAFC]">
       <Sidebar />
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
         <div className="p-8 h-full overflow-y-auto font-bold">
-          {/* FIX: Sử dụng biến message */}
           {message.text && (
             <div
-              className={`mb-6 p-4 rounded-xl border-2 font-bold ${message.type === "error" ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"}`}
+              className={`mb-6 p-4 rounded-xl border-2 font-bold ${
+                message.type === "error"
+                  ? "bg-red-50 text-red-600 border-red-100"
+                  : "bg-green-50 text-green-600 border-green-100"
+              }`}
             >
               {message.text}
             </div>
           )}
 
-          <div className="mb-8">
+          <div className="mb-8 text-slate-900">
             <button
               onClick={() => router.push("/admin/station")}
               className="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-black mb-2 transition-colors text-xs uppercase tracking-wider"
             >
               <ArrowLeftOutlined /> Quay lại danh sách
             </button>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-              Chỉnh sửa Điểm dừng
-            </h2>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-tighter">
-              Cập nhật thông tin trạm #{id}
+            <h2 className="text-3xl font-black tracking-tight">Chỉnh sửa Điểm dừng</h2>
+            <p className="text-slate-500 text-sm">
+              Cập nhật thông tin chi tiết và vị trí của trạm.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* ... Giữ nguyên phần UI form như cũ ... */}
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-slate-900"
+          >
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <div className="space-y-6">
@@ -234,18 +248,28 @@ function EditStationContent() {
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-2">
-                    <input
-                      type="text"
-                      value={formData.latitude}
-                      readOnly
-                      className="w-full px-4 py-2.5 bg-slate-50 border rounded-lg text-xs font-mono font-bold text-slate-900"
-                    />
-                    <input
-                      type="text"
-                      value={formData.longitude}
-                      readOnly
-                      className="w-full px-4 py-2.5 bg-slate-50 border rounded-lg text-xs font-mono font-bold text-slate-900"
-                    />
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">
+                        Latitude
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.latitude}
+                        readOnly
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">
+                        Longitude
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.longitude}
+                        readOnly
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900"
+                      />
+                    </div>
                   </div>
                 </div>
                 <button
@@ -266,15 +290,22 @@ function EditStationContent() {
                     <SearchOutlined className="mx-3 text-blue-500 text-xl" />
                     <input
                       type="text"
-                      placeholder="Tìm địa chỉ mới..."
-                      className="flex-1 outline-none text-[15px] font-bold !text-slate-950 !opacity-100 py-2 text-slate-900"
+                      placeholder="Tìm địa chỉ mới trên bản đồ..."
+                      className="flex-1 outline-none text-[15px] font-bold py-2 text-slate-950"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddressSearch()}
                     />
+                    <button
+                      type="button"
+                      onClick={handleAddressSearch}
+                      className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-xs hover:bg-blue-600 transition-colors"
+                    >
+                      TÌM
+                    </button>
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 max-h-64 overflow-y-auto">
+                    <div className="mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-64 overflow-y-auto">
                       {searchResults.map((result, index) => (
                         <div
                           key={index}
@@ -313,8 +344,8 @@ export default function EditStationPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center font-bold">
-          ĐANG TẢI ỨNG DỤNG...
+        <div className="flex h-screen items-center justify-center font-bold text-slate-900">
+          <LoadingOutlined className="mr-2" /> ĐANG TẢI ỨNG DỤNG...
         </div>
       }
     >
