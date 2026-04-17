@@ -50,13 +50,13 @@ export function clearToken(): void {
   window.localStorage.removeItem(ROLE_KEY);
 }
 
-// ===== SERVICE =====
+// ===== SERVICE LOGIC =====
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await loginRequest(payload);
 
   if (!response?.accessToken || !response?.user) {
-    throw new Error("Sai tài khoản hoặc mật khẩu");
+    throw new Error("Dữ liệu phản hồi không hợp lệ");
   }
 
   setAuthData(response, payload.email);
@@ -75,5 +75,5 @@ export async function resetPassword(payload: ResetPasswordPayload): Promise<Mess
   return await resetPasswordRequest(payload);
 }
 
+// Export thêm alias nếu cần
 export const loginAndStore = login;
-export const registerAndStore = register;
