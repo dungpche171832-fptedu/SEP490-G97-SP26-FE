@@ -16,6 +16,17 @@ export interface RuleListResponse {
   totalCount: number;
 }
 
+export interface ReplaceRuleItem {
+  minKm: number;
+  maxKm: number | null;
+  price: number;
+}
+
+export interface ReplaceRuleRequest {
+  carType: CarType;
+  rules: ReplaceRuleItem[];
+}
+
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
   headers: {
@@ -66,6 +77,21 @@ export const ruleService = {
       const message =
         axiosError.response?.data?.message ||
         `Không thể tải danh sách rule (${axiosError.response?.status || "unknown error"})`;
+
+      throw new Error(message);
+    }
+  },
+
+  async replaceRules(payload: ReplaceRuleRequest): Promise<RuleListResponse> {
+    try {
+      const response = await api.put<RuleListResponse>("/rules/replace", payload);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+
+      const message =
+        axiosError.response?.data?.message ||
+        `Không thể lưu bộ rule (${axiosError.response?.status || "unknown error"})`;
 
       throw new Error(message);
     }
