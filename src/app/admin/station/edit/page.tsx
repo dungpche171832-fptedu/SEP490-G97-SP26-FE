@@ -8,7 +8,6 @@ import {
   SearchOutlined,
   EnvironmentOutlined,
   LoadingOutlined,
-  LockOutlined,
 } from "@ant-design/icons";
 import dynamic from "next/dynamic";
 import axios from "axios";
@@ -32,16 +31,6 @@ const MapComponent = dynamic(() => import("@/components/MapPicker"), {
   ),
 });
 
-// 🔴 Hàm mô phỏng User đang đăng nhập (Nên thay bằng Auth Context/Redux)
-const getCurrentUser = () => {
-  if (typeof window !== "undefined") {
-    const user = localStorage.getItem("user");
-    // Mặc định trả về MANAGER_BRANCH để bạn test thử việc khóa form
-    return user ? JSON.parse(user) : { role: "MANAGER_BRANCH" };
-  }
-  return null;
-};
-
 function EditStationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,11 +53,6 @@ function EditStationContent() {
     latitude: 21.028511,
     longitude: 105.804817,
   });
-
-  // ✅ Lấy quyền User
-  const user = getCurrentUser();
-  const isAdmin = user?.role === "ADMIN";
-  const isManager = user?.role === "MANAGER_BRANCH";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,8 +109,8 @@ function EditStationContent() {
     setFormData((prev) => ({
       ...prev,
       address: place.display_name,
-      // ✅ BẢNG PHÂN QUYỀN: Chỉ Admin mới được phép update tọa độ từ việc search map
-      ...(isAdmin ? { latitude: lat, longitude: lon } : {}),
+      latitude: lat,
+      longitude: lon,
     }));
 
     setSearchResults([]);
@@ -169,9 +153,6 @@ function EditStationContent() {
   const inputClass =
     "w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-[15px] font-bold !text-slate-950 !opacity-100 outline-none focus:border-blue-500 transition-all shadow-sm";
 
-  // Class dùng chung cho các input bị khóa đối với Manager
-  const disabledClass = "bg-slate-100 cursor-not-allowed text-slate-500 border-slate-200";
-
   if (isLoading)
     return (
       <div className="flex h-screen items-center justify-center bg-white ml-64 text-slate-900 font-bold">
@@ -188,22 +169,6 @@ function EditStationContent() {
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
         <div className="p-8 h-full overflow-y-auto font-bold">
-          {/* Cảnh báo quyền cho Manager */}
-          {isManager && (
-            <div className="mb-6 p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-center gap-3 text-orange-700">
-              <LockOutlined className="text-xl" />
-              <div>
-                <p className="text-sm font-black uppercase tracking-wide">
-                  Chế độ quản lý chi nhánh
-                </p>
-                <p className="text-xs font-semibold mt-0.5">
-                  Bạn chỉ được phép cập nhật Địa chỉ chi tiết. Tên, Mã trạm và Tọa độ GPS đã bị khóa
-                  để đảm bảo đồng bộ lịch trình.
-                </p>
-              </div>
-            </div>
-          )}
-
           {message.text && (
             <div
               className={`mb-6 p-4 rounded-xl border-2 font-bold ${
@@ -233,51 +198,43 @@ function EditStationContent() {
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                 <div className="space-y-6">
-                  {/* BỊ KHÓA VỚI MANAGER */}
                   <div>
                     <label className="block text-[11px] font-black text-slate-700 uppercase tracking-widest mb-2">
-                      Tên điểm dừng *{" "}
-                      {isManager && <LockOutlined className="text-slate-400 ml-1" />}
+                      Tên điểm dừng *
                     </label>
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className={`${inputClass} ${isManager ? disabledClass : ""}`}
-                      readOnly={isManager}
+                      className={inputClass}
                       required
                     />
                   </div>
 
-                  {/* BỊ KHÓA VỚI MANAGER */}
                   <div>
                     <label className="block text-[11px] font-black text-slate-700 uppercase tracking-widest mb-2">
-                      Mã điểm dừng * {isManager && <LockOutlined className="text-slate-400 ml-1" />}
+                      Mã điểm dừng *
                     </label>
                     <input
                       type="text"
                       name="code"
                       value={formData.code}
                       onChange={handleChange}
-                      className={`${inputClass} font-mono uppercase ${isManager ? disabledClass : "text-blue-700"}`}
-                      readOnly={isManager}
+                      className={`${inputClass} font-mono uppercase text-blue-700`}
                       required
                     />
                   </div>
 
-                  {/* BỊ KHÓA VỚI MANAGER */}
                   <div>
                     <label className="block text-[11px] font-black text-slate-700 uppercase tracking-widest mb-2">
-                      Tỉnh/Thành phố *{" "}
-                      {isManager && <LockOutlined className="text-slate-400 ml-1" />}
+                      Tỉnh/Thành phố *
                     </label>
                     <select
                       name="cityId"
                       value={formData.cityId}
                       onChange={handleChange}
-                      className={`${inputClass} ${isManager ? disabledClass : ""}`}
-                      disabled={isManager}
+                      className={inputClass}
                       required
                     >
                       <option value="">-- Chọn khu vực --</option>
@@ -289,7 +246,6 @@ function EditStationContent() {
                     </select>
                   </div>
 
-                  {/* ✅ Ô MỞ KHÓA: Manager được phép sửa ô này */}
                   <div>
                     <label className="block text-[11px] font-black text-blue-600 uppercase tracking-widest mb-2">
                       Địa chỉ chi tiết / Ghi chú *
@@ -304,28 +260,27 @@ function EditStationContent() {
                     />
                   </div>
 
-                  {/* BỊ KHÓA VỚI MANAGER */}
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">
-                        Latitude {isManager && <LockOutlined />}
+                        Latitude
                       </label>
                       <input
                         type="text"
                         value={formData.latitude}
                         readOnly
-                        className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 cursor-not-allowed"
                       />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">
-                        Longitude {isManager && <LockOutlined />}
+                        Longitude
                       </label>
                       <input
                         type="text"
                         value={formData.longitude}
                         readOnly
-                        className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-500 cursor-not-allowed"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -350,11 +305,7 @@ function EditStationContent() {
                     <SearchOutlined className="mx-3 text-blue-500 text-xl" />
                     <input
                       type="text"
-                      placeholder={
-                        isManager
-                          ? "Tìm địa chỉ mới (Không thay đổi GPS)..."
-                          : "Tìm địa chỉ mới trên bản đồ..."
-                      }
+                      placeholder="Tìm địa chỉ mới trên bản đồ..."
                       className="flex-1 outline-none text-[15px] font-bold py-2 text-slate-950"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -392,10 +343,7 @@ function EditStationContent() {
                     latitude={formData.latitude}
                     longitude={formData.longitude}
                     onLocationSelect={(lat: number, lng: number) => {
-                      // ✅ BẢNG PHÂN QUYỀN: Click map chỉ nhảy tọa độ nếu là Admin
-                      if (isAdmin) {
-                        setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-                      }
+                      setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
                     }}
                   />
                 </div>
