@@ -1,7 +1,8 @@
 export interface Station {
-  stationId: number;
-  stationName: string;
-  stationOrder: number;
+  stations: {
+    stationOrder: number;
+    stationName: string;
+  }[];
 }
 
 export interface Plan {
