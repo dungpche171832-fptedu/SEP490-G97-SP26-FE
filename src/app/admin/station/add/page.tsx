@@ -15,7 +15,6 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 import { addStation, getCities, City } from "@/services/station.service";
 
-// Định nghĩa interface để fix lỗi 'any'
 interface NominatimResult {
   lat: string;
   lon: string;
@@ -38,8 +37,6 @@ export default function AddStationPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
-
-  // ✅ BƯỚC 1: Thay đổi mảng tĩnh thành State rỗng
   const [cities, setCities] = useState<City[]>([]);
 
   const [formData, setFormData] = useState({
@@ -51,14 +48,13 @@ export default function AddStationPage() {
     longitude: 105.804817,
   });
 
-  // ✅ BƯỚC 2: Thêm useEffect để tự động gọi Service khi load trang
   useEffect(() => {
     const loadCities = async () => {
       try {
         const data = await getCities();
-        setCities(data); // Đổ dữ liệu thật từ DB vào đây
+        setCities(data || []);
       } catch (error) {
-        console.error("Không thể lấy danh sách tỉnh thành từ DB:", error);
+        console.error("Lỗi tải danh sách tỉnh thành:", error);
       }
     };
     loadCities();
@@ -76,13 +72,12 @@ export default function AddStationPage() {
     }
   };
 
-  // Thay any bằng NominatimResult
   const handleSelectPlace = (place: NominatimResult) => {
     const lat = parseFloat(place.lat);
     const lon = parseFloat(place.lon);
     setFormData((prev) => ({
       ...prev,
-      address: place.display_name,
+      address: place.display_name, // Cập nhật địa chỉ vào form
       latitude: lat,
       longitude: lon,
     }));
@@ -90,9 +85,20 @@ export default function AddStationPage() {
     setSearchQuery(place.display_name);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // ✅ Sửa handleChange để nhận cả input text và số (Lat/Lng)
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "latitude" || name === "longitude"
+          ? value === ""
+            ? 0
+            : parseFloat(value)
+          : value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,7 +115,6 @@ export default function AddStationPage() {
       setMessage({ type: "success", text: "Thêm điểm dừng thành công!" });
       setTimeout(() => router.push("/admin/station"), 1500);
     } catch (error: unknown) {
-      // Fix lỗi any ở catch block bằng cách ép kiểu an toàn
       const errorMsg = error instanceof Error ? error.message : "Lỗi lưu dữ liệu.";
       setMessage({ type: "error", text: errorMsg });
       setIsSubmitting(false);
@@ -117,7 +122,7 @@ export default function AddStationPage() {
   };
 
   const inputClass =
-    "w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-[15px] font-bold !text-slate-950 !opacity-100 outline-none focus:border-blue-500 transition-all placeholder:text-slate-300 shadow-sm";
+    "w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-[15px] font-bold !text-slate-950 outline-none focus:border-blue-500 transition-all placeholder:text-slate-300 shadow-sm";
 
   return (
     <div className="flex h-screen bg-[#F8FAFC]">
@@ -125,7 +130,6 @@ export default function AddStationPage() {
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
         <div className="p-8 h-full overflow-y-auto">
-          {/* Sử dụng biến 'message' ở đây để hết lỗi unused-vars */}
           {message.text && (
             <div
               className={`mb-4 p-4 rounded-xl font-bold ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
@@ -198,16 +202,33 @@ export default function AddStationPage() {
                       ))}
                     </select>
                   </div>
+
+                  {/* ✅ Ô Địa chỉ chi tiết (Address) */}
+                  <div>
+                    <label className="block text-[11px] font-black text-slate-700 uppercase tracking-widest mb-2">
+                      Địa chỉ chi tiết
+                    </label>
+                    <textarea
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className={inputClass + " h-20 resize-none"}
+                      placeholder="Địa chỉ sẽ tự điền khi chọn trên map hoặc nhập tay..."
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">
                         Latitude
                       </label>
                       <input
-                        type="text"
+                        type="number"
+                        step="any"
+                        name="latitude"
                         value={formData.latitude}
-                        readOnly
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 !opacity-100"
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:border-blue-500 outline-none"
                       />
                     </div>
                     <div>
@@ -215,10 +236,12 @@ export default function AddStationPage() {
                         Longitude
                       </label>
                       <input
-                        type="text"
+                        type="number"
+                        step="any"
+                        name="longitude"
                         value={formData.longitude}
-                        readOnly
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 !opacity-100"
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:border-blue-500 outline-none"
                       />
                     </div>
                   </div>
@@ -226,7 +249,7 @@ export default function AddStationPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full mt-10 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-sm flex items-center justify-center gap-3 shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50"
+                  className="w-full mt-10 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-sm flex items-center justify-center gap-3 shadow-lg transition-all active:scale-95 disabled:opacity-50"
                 >
                   <SaveOutlined className="text-lg" />{" "}
                   {isSubmitting ? "ĐANG LƯU DỮ LIỆU..." : "LƯU TRẠM DỪNG"}
@@ -235,14 +258,14 @@ export default function AddStationPage() {
             </div>
 
             <div className="lg:col-span-7">
-              <div className="w-full h-[620px] bg-white rounded-2xl border border-slate-200 relative overflow-hidden shadow-sm">
+              <div className="w-full h-[720px] bg-white rounded-2xl border border-slate-200 relative overflow-hidden shadow-sm">
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] z-[1000]">
                   <div className="bg-white shadow-2xl rounded-2xl flex items-center p-2 border border-slate-100">
                     <SearchOutlined className="mx-3 text-blue-500 text-xl" />
                     <input
                       type="text"
                       placeholder="Tìm địa chỉ bến xe, trạm dừng..."
-                      className="flex-1 outline-none text-[15px] font-bold !text-slate-950 !opacity-100 py-2"
+                      className="flex-1 outline-none text-[15px] font-bold py-2"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddressSearch()}
@@ -255,7 +278,6 @@ export default function AddStationPage() {
                       TÌM
                     </button>
                   </div>
-
                   {searchResults.length > 0 && (
                     <div className="mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-64 overflow-y-auto">
                       {searchResults.map((result, index) => (
@@ -273,7 +295,6 @@ export default function AddStationPage() {
                     </div>
                   )}
                 </div>
-
                 <div className="w-full h-full p-2">
                   <MapComponent
                     latitude={formData.latitude}
