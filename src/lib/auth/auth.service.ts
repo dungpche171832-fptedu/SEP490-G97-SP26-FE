@@ -6,6 +6,7 @@ import type {
   ForgotPasswordPayload,
   ResetPasswordPayload,
 } from "./auth.types";
+
 import {
   login as loginRequest,
   register as registerRequest,
@@ -48,6 +49,8 @@ export function clearToken(): void {
   window.localStorage.removeItem(FULLNAME_KEY);
   window.localStorage.removeItem(ROLE_KEY);
 }
+
+// ===== SERVICE =====
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await loginRequest(payload);
