@@ -14,6 +14,11 @@ export interface Station {
   address: string;
   cityName: string;
 }
+
+export interface City {
+  id: number;
+  name: string;
+}
 export interface NominatimResult {
   place_id: number;
   licence: string;
@@ -180,6 +185,26 @@ export const updateStation = async (
     return await response.json();
   } catch (error) {
     console.error("Error in updateStation:", error);
+    throw error;
+  }
+};
+/**
+ * Lấy danh sách Tỉnh/Thành phố từ Database
+ * [GET] /api/cities (Bạn hãy kiểm tra lại chính xác Path này ở Backend Controller nhé)
+ */
+export const getCities = async (): Promise<City[]> => {
+  try {
+    // Gọi đến API hiện có của Backend
+    const response = await fetch("http://localhost:8080/api/cities", {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) throw new Error("Không thể lấy dữ liệu City từ Database");
+
+    return await response.json();
+  } catch (error) {
+    console.error("Lỗi service getCities:", error);
     throw error;
   }
 };
