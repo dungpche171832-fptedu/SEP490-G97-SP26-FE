@@ -1,28 +1,58 @@
 "use client";
 
-import React from "react";
-import { Button, Input, DatePicker, Select } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, DatePicker, Select, message } from "antd";
 import {
   SafetyCertificateOutlined,
   ClockCircleOutlined,
   CrownOutlined,
   SearchOutlined,
+  CaretDownOutlined,
 } from "@ant-design/icons";
+import { cityService } from "src/services/cityService";
+import { City } from "src/model/city";
 
 export default function HomePage() {
+  const [cities, setCities] = useState<City[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCities = async () => {
+      setLoading(true);
+      try {
+        const data = await cityService.getAllCities();
+        // Xử lý dữ liệu trả về theo đúng kiểu City[] để tránh lỗi 'any'
+        const cityData: City[] = Array.isArray(data)
+          ? data
+          : (data as { content?: City[] })?.content || [];
+        setCities(cityData);
+      } catch {
+        // Bỏ biến 'error' không dùng đến để tránh lỗi @typescript-eslint/no-unused-vars
+        message.error("Không thể tải danh sách tỉnh thành");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCities();
+  }, []);
+
+  // Map dữ liệu dùng kiểu City thay vì any
+  const cityOptions = cities.map((c: City) => ({
+    value: c.id,
+    label: c.name,
+  }));
+
   return (
     <div className="flex flex-col w-full bg-white">
       {/* 1. HERO SECTION */}
       <section className="relative w-full pt-16 pb-24 overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-10 flex flex-col md:flex-row items-center justify-between gap-12">
-          {/* Left Text */}
           <div className="flex-1 space-y-6 z-10">
             <h1 className="text-6xl font-extrabold text-[#0f172a] leading-tight">
               Đặt vé trong <span className="text-blue-600">10 giây</span>
             </h1>
             <p className="text-gray-500 text-lg max-w-lg leading-relaxed">
-              Hệ thống vận tải cao cấp kết nối các tỉnh thành với đội ngũ xe Limousine hiện đại, an
-              toàn và chuyên nghiệp nhất Việt Nam.
+              Hệ thống vận tải cao cấp kết nối các tỉnh thành với đội ngũ xe Limousine hiện đại.
             </p>
             <Button
               type="primary"
@@ -33,16 +63,15 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Right Image Container */}
           <div className="flex-1 relative">
             <div className="w-full h-[500px] rounded-[40px] overflow-hidden shadow-2xl rotate-2 hover:rotate-0 transition-all duration-500">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=2069&auto=format&fit=crop"
                 alt="Limousine Bus"
                 className="w-full h-full object-cover"
               />
             </div>
-            {/* Trang trí phía sau ảnh */}
             <div className="absolute -z-10 -bottom-6 -right-6 w-full h-full bg-blue-50 rounded-[40px]"></div>
           </div>
         </div>
@@ -58,14 +87,13 @@ export default function HomePage() {
               </label>
               <Select
                 showSearch
+                loading={loading}
                 placeholder="Chọn điểm đi"
                 size="large"
                 className="w-full"
-                suffixIcon={<SearchOutlined />}
-                options={[
-                  { value: "hanoi", label: "Hà Nội" },
-                  { value: "laocai", label: "Lào Cai" },
-                ]}
+                suffixIcon={<CaretDownOutlined />}
+                options={cityOptions}
+                optionFilterProp="label"
               />
             </div>
 
@@ -75,13 +103,13 @@ export default function HomePage() {
               </label>
               <Select
                 showSearch
+                loading={loading}
                 placeholder="Chọn điểm đến"
                 size="large"
                 className="w-full"
-                options={[
-                  { value: "quangninh", label: "Quảng Ninh" },
-                  { value: "haiphong", label: "Hải Phòng" },
-                ]}
+                suffixIcon={<CaretDownOutlined />}
+                options={cityOptions}
+                optionFilterProp="label"
               />
             </div>
 
@@ -89,7 +117,12 @@ export default function HomePage() {
               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
                 Ngày đi
               </label>
-              <DatePicker size="large" className="w-full" placeholder="Chọn ngày" />
+              <DatePicker
+                size="large"
+                className="w-full"
+                placeholder="Chọn ngày"
+                suffixIcon={<CaretDownOutlined />}
+              />
             </div>
 
             <Button
@@ -105,44 +138,35 @@ export default function HomePage() {
       </section>
 
       {/* 3. POPULAR ROUTES SECTION */}
-      <section className="max-w-[1440px] mx-auto px-10 py-32 w-full">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl font-bold text-slate-900">Các tuyến đường phổ biến</h2>
-          <p className="text-gray-400">Gợi ý những hành trình tuyệt vời nhất dành cho bạn</p>
-        </div>
-
+      <section className="max-w-[1440px] mx-auto px-10 py-32 w-full text-center">
+        <h2 className="text-4xl font-bold text-slate-900 mb-16">Các tuyến đường phổ biến</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
               title: "Hà Nội - Lào Cai",
-              desc: "Hơn 40 chuyến mỗi ngày",
-              img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop",
+              img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070",
             },
             {
               title: "Hà Nội - Quảng Ninh",
-              desc: "Phục vụ 24/7",
-              img: "https://images.unsplash.com/photo-1599708153386-62bd3f02407d?q=80&w=2070&auto=format&fit=crop",
+              img: "https://images.unsplash.com/photo-1599708153386-62bd3f02407d?q=80&w=2070",
             },
             {
               title: "Hà Nội - Hải Phòng",
-              desc: "Giá chỉ từ 220.000đ",
-              img: "https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=2070&auto=format&fit=crop",
+              img: "https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=2070",
             },
           ].map((route, i) => (
             <div
               key={i}
               className="group relative h-[450px] rounded-[32px] overflow-hidden cursor-pointer shadow-xl transition-all duration-500 hover:-translate-y-2"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={route.img}
                 className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
                 alt={route.title}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end">
-                <h3 className="text-white text-2xl font-bold mb-1">{route.title}</h3>
-                <p className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  {route.desc}
-                </p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end text-left">
+                <h3 className="text-white text-2xl font-bold">{route.title}</h3>
               </div>
             </div>
           ))}
@@ -158,7 +182,7 @@ export default function HomePage() {
             </div>
             <h4 className="text-xl font-bold text-slate-800">An toàn là số 1</h4>
             <p className="text-gray-500 leading-relaxed">
-              Đội ngũ lái xe kinh nghiệm, được đào tạo bài bản và xe luôn được bảo dưỡng định kỳ.
+              Đội ngũ lái xe kinh nghiệm và xe luôn được bảo dưỡng định kỳ.
             </p>
           </div>
 
@@ -168,7 +192,7 @@ export default function HomePage() {
             </div>
             <h4 className="text-xl font-bold text-slate-800">Đúng giờ 100%</h4>
             <p className="text-gray-500 leading-relaxed">
-              Cam kết khởi hành đúng giờ, đón trả khách đúng điểm đã đặt trước trên hệ thống.
+              Cam kết khởi hành đúng giờ, đón trả khách đúng điểm.
             </p>
           </div>
 
@@ -178,7 +202,7 @@ export default function HomePage() {
             </div>
             <h4 className="text-xl font-bold text-slate-800">Dịch vụ cao cấp</h4>
             <p className="text-gray-500 leading-relaxed">
-              Nội thất Limousine sang trọng, nước uống và wifi miễn phí suốt hành trình.
+              Nội thất Limousine sang trọng, nước uống và wifi miễn phí.
             </p>
           </div>
         </div>
