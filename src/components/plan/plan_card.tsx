@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
-import Image from "next/image"; // Import component Image
+import Image from "next/image";
 import { Plan } from "src/model/plan";
+import bus3 from "/public/images/bus3.png";
 
 interface PlanCardProps {
   plan: Plan;
@@ -35,12 +36,11 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300">
-      {/* Ảnh Thumbnail sử dụng Next.js Image */}
       <div className="relative h-44 overflow-hidden">
         <Image
-          src={`https://api.dicebear.com/7.x/initials/svg?seed=${plan.id}`}
-          alt="thumbnail"
-          fill // Sử dụng fill để lấp đầy container relative phía trên
+          src="/images/bus3.png"
+          alt={`thumbnail ${plan.id}`}
+          fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
