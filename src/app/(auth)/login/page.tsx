@@ -132,7 +132,7 @@ function LoginForm() {
       }
 
       if (role === "admin") {
-        router.push("/admin");
+        router.push("/admin/employees");
         return;
       }
 
@@ -142,7 +142,7 @@ function LoginForm() {
       }
 
       if (role === "manager") {
-        router.push("/manager");
+        router.push("/admin/branch");
         return;
       }
 
