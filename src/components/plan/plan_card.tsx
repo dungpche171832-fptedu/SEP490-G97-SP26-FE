@@ -1,11 +1,14 @@
+"use client";
 import React from "react";
+import Image from "next/image"; // Import component Image
 import { Plan } from "src/model/plan";
 
 interface PlanCardProps {
   plan: Plan;
+  onBook?: (id: number) => void;
 }
 
-const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
+const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
     const time = date.toLocaleTimeString("vi-VN", {
@@ -32,19 +35,15 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300">
-      {/* Ảnh Thumbnail */}
+      {/* Ảnh Thumbnail sử dụng Next.js Image */}
       <div className="relative h-44 overflow-hidden">
-        <img
-          src={`https://api.dicebear.com/7.x/initials/svg?seed=${plan.id}`} // Thay bằng URL ảnh thật
-          className="w-full h-full object-cover"
+        <Image
+          src={`https://api.dicebear.com/7.x/initials/svg?seed=${plan.id}`}
           alt="thumbnail"
+          fill // Sử dụng fill để lấp đầy container relative phía trên
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
-          </svg>
-          3
-        </div>
       </div>
 
       <div className="p-4">
@@ -66,10 +65,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11.05a2.5 2.5 0 014.9 0H17a1 1 0 001-1V5a1 1 0 00-1-1H3z" />
-          </svg>
           <h3 className="font-bold text-slate-700 text-sm">
             {from} → {to}
           </h3>
@@ -77,14 +72,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
 
         <div className="flex justify-between items-center text-slate-400 text-[11px] mb-4">
           <div className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
             <span>
               {start.time} - {start.day}
             </span>
@@ -92,20 +79,13 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
           <span className="font-bold text-slate-500">3h</span>
         </div>
 
-        {/* Thanh Progress Bar màu xanh đặc trưng */}
-        <div className="w-full bg-slate-100 h-1.5 rounded-full mb-6 overflow-hidden">
-          <div
-            className={`h-full rounded-full ${isActive ? "bg-green-500" : isPending ? "bg-red-500" : "bg-slate-300"}`}
-            style={{ width: isActive ? "45%" : isPending ? "15%" : "0%" }}
-          ></div>
-        </div>
-
         <button
           disabled={!isActive}
-          className={`w-full py-2 rounded-lg font-bold text-[10px] flex items-center justify-center gap-2 transition-all ${
+          onClick={() => onBook && onBook(plan.id)}
+          className={`w-full py-2.5 rounded-lg font-bold text-[10px] flex items-center justify-center gap-2 transition-all ${
             isActive
-              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-              : "bg-slate-200 text-slate-400"
+              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-95"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
           }`}
         >
           ĐẶT VÉ
