@@ -14,7 +14,7 @@ export default function Header() {
     },
     {
       key: "2",
-      label: <Link href="/history">Lịch sử đặt vé</Link>,
+      label: <Link href="/home/ticket/historyTicket">Lịch sử đặt vé</Link>,
     },
     {
       type: "divider",

@@ -1,11 +1,13 @@
 import React from "react";
 import { Plan } from "src/model/plan";
+import { useRouter } from "next/navigation";
 
 interface PlanCardProps {
   plan: Plan;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
+  const router = useRouter();
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
     const time = date.toLocaleTimeString("vi-VN", {
@@ -102,6 +104,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan }) => {
 
         <button
           disabled={!isActive}
+          onClick={() => router.push(`/home/ticket?planId=${plan.id}`)}
           className={`w-full py-2 rounded-lg font-bold text-[10px] flex items-center justify-center gap-2 transition-all ${
             isActive
               ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
