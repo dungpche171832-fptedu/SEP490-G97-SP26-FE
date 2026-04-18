@@ -33,13 +33,13 @@ export type AddBranchRequest = {
   address: string;
   phone: string;
   email: string;
+  imageUrl?: string | null;
   isActive: boolean;
-  // Các trường mới cho Manager Account
   managerFullName: string;
   managerEmail: string;
   managerPhone: string;
   managerPassword?: string;
-  roleId: number; // Thường là ID của role MANAGER
+  roleId: number;
 };
 
 export type AddBranchResponse = {
@@ -65,9 +65,10 @@ export interface BranchViewResponse {
   address: string;
   phone: string;
   email: string;
+  imageUrl?: string | null;
   isActive: boolean;
-  managerId: number;
-  managerName: string;
+  managerId?: number;
+  managerName?: string;
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
