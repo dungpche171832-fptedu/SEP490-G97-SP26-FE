@@ -64,9 +64,6 @@ export const calculateDistanceOSRM = async (
   }
 };
 
-/**
- * ĐÃ THÊM LẠI HÀM NÀY CHO PAGE.TSX GỌI
- */
 export const calculateDistanceOSRMList = async (
   coordinates: { lng: number; lat: number }[],
 ): Promise<number> => {
@@ -89,7 +86,6 @@ export const calculateDistanceOSRMList = async (
 
 export const previewTicketPrice = async (payload: TicketAddRequest): Promise<PriceResponse> => {
   try {
-    // Chú ý: Nếu API BE của bạn là /tickets/preview-price thì giữ nguyên
     const response = await ticketClient.post(`/ticket/preview-price`, payload);
     const responseData = response.data;
 
