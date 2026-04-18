@@ -30,12 +30,17 @@ export const planService = {
   getListPlans: async (): Promise<PlanResponse> => {
     const token = localStorage.getItem("token");
 
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch("http://localhost:8080/api/plans", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
     });
 
     if (response.status === 401 || response.status === 403) {

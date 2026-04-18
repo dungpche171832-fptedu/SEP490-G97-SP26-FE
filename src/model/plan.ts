@@ -1,4 +1,6 @@
 export interface Station {
+  stationOrder: number;
+  stationName: string;
   stations: {
     stationOrder: number;
     stationName: string;

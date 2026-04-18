@@ -14,18 +14,18 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
         },
       }}
     >
-      <Header />
+      <RoleGuard allowedRoles={["customer"]} allowGuest>
+        <Header />
 
-      <RoleGuard allowedRoles={["customer", "admin"]}>
         <div
           className="subpixel-antialiased"
           style={{ fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif" }}
         >
           {children}
         </div>
-      </RoleGuard>
 
-      <Footer />
+        <Footer />
+      </RoleGuard>
     </ConfigProvider>
   );
 }

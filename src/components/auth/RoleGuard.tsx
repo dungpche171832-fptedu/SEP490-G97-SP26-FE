@@ -8,22 +8,25 @@ import { getRole, getToken } from "@/lib/auth/auth.service";
 type RoleGuardProps = {
   children: ReactNode;
   allowedRoles: string[];
+  allowGuest?: boolean;
 };
 
-export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
+export default function RoleGuard({ children, allowedRoles, allowGuest = false }: RoleGuardProps) {
   const router = useRouter();
 
   const token = getToken();
   const role = getRole()?.replace("ROLE_", "").toLowerCase() || "";
-
   const normalizedAllowedRoles = allowedRoles.map((item) => item.toLowerCase());
 
-  const isAuthorized = !!token && !!role && normalizedAllowedRoles.includes(role);
+  const isGuest = !token || !role;
+
+  const isAuthorized =
+    (allowGuest && isGuest) || (!!token && !!role && normalizedAllowedRoles.includes(role));
 
   useEffect(() => {
     if (isAuthorized) return;
 
-    if (!token || !role) {
+    if (isGuest) {
       router.replace("/login");
       return;
     }
@@ -34,26 +37,24 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     }
 
     if (role === "staff") {
-      router.replace("/admin/staff");
+      router.replace("/staff");
       return;
     }
 
     if (role === "manager") {
-      router.replace("/admin/manager");
+      router.replace("/manager");
       return;
     }
 
     if (role === "admin") {
-      router.replace("/admin/car");
+      router.replace("/admin");
       return;
     }
 
     router.replace("/login");
-  }, [isAuthorized, token, role, router]);
+  }, [isAuthorized, isGuest, role, router]);
 
-  if (!isAuthorized) {
-    return null;
-  }
+  if (!isAuthorized) return null;
 
   return <>{children}</>;
 }
