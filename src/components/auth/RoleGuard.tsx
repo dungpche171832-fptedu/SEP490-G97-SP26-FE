@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { getRole, getToken } from "@/lib/auth/auth.service";
@@ -13,12 +13,10 @@ type RoleGuardProps = {
 export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const router = useRouter();
 
-  const token = useMemo(() => getToken(), []);
-  const role = useMemo(() => getRole()?.toLowerCase() || "", []);
-  const normalizedAllowedRoles = useMemo(
-    () => allowedRoles.map((item) => item.toLowerCase()),
-    [allowedRoles],
-  );
+  const token = getToken();
+  const role = getRole()?.replace("ROLE_", "").toLowerCase() || "";
+
+  const normalizedAllowedRoles = allowedRoles.map((item) => item.toLowerCase());
 
   const isAuthorized = !!token && !!role && normalizedAllowedRoles.includes(role);
 
@@ -36,17 +34,17 @@ export default function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     }
 
     if (role === "staff") {
-      router.replace("/staff");
+      router.replace("/admin/staff");
       return;
     }
 
     if (role === "manager") {
-      router.replace("/manager");
+      router.replace("/admin/manager");
       return;
     }
 
     if (role === "admin") {
-      router.replace("/admin");
+      router.replace("/admin/car");
       return;
     }
 
