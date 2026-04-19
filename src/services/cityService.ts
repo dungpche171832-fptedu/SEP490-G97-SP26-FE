@@ -32,7 +32,6 @@ export const cityService = {
 
       const data = await response.json();
 
-      // Nếu API trả về trực tiếp mảng thì dùng data, nếu bọc trong content thì dùng data.content
       return Array.isArray(data) ? data : data?.content || [];
     } catch (error) {
       console.error("cityService error:", error);
