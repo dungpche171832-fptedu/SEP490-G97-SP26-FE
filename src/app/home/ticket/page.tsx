@@ -19,7 +19,7 @@ import {
 import { planService } from "@/services/planService";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Car } from "@/services/car.service";
+import { Car } from "@/services/carService";
 
 // --- Interfaces để tránh lỗi 'any' ---
 interface Station {
@@ -109,7 +109,9 @@ function AddTicketContent() {
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [branchImage, setBranchImage] = useState<string>("");
+  const [branchImage, setBranchImage] = useState<string>(
+    "https://png.pngtree.com/png-clipart/20250427/original/pngtree-3d-qr-code-icon-isolated-on-transparent-background-png-image_20875047.png",
+  );
   const [isFetchingImage, setIsFetchingImage] = useState(false);
 
   useEffect(() => {
@@ -203,8 +205,6 @@ function AddTicketContent() {
     setIsPaymentModalOpen(true);
 
     try {
-      setBranchImage("");
-
       const branchId =
         planDetail?.carInfo?.branchId ||
         planDetail?.carInfo?.branch?.id ||
@@ -278,7 +278,7 @@ function AddTicketContent() {
           <div>
             <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
               <span className="p-2 bg-blue-600 text-white rounded-lg text-sm">BUS</span>
-              ĐẶT VÉ {carInfo?.description || carInfo?.name || "LIMOUSINE"}
+              ĐẶT VÉ {carInfo?.description || carInfo?.carType || "LIMOUSINE"}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Lịch trình: <span className="text-blue-600 font-bold">{planDetail?.code}</span>
@@ -526,14 +526,14 @@ function AddTicketContent() {
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight">Thanh toán vé xe</h3>
             <p className="text-blue-100 text-xs mt-1 opacity-80">Quét mã QR để hoàn tất đặt chỗ</p>
-            <p>Nội dung chuyển khoản vui lòng nhập theo mã số dưới đây;</p>
+            <p>Nội dung chuyển khoản vui lòng nhập theo mã số dưới đây</p>
           </div>
           <div className="p-8">
             <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center">
               {isFetchingImage ? (
                 <Spin size="large" />
               ) : branchImage ? (
-                <image
+                <Image
                   src={branchImage}
                   alt="QR Payment"
                   width={300}
