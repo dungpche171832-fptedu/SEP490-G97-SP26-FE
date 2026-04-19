@@ -289,7 +289,7 @@ export default function EmployeePage() {
                             <td className="px-6 py-4 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <Link href={`/admin/employee/view?id=${employee.accountId}`}>
-                                  <button className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-sm font-medium transition-all">
+                                  <button className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all">
                                     Chi tiết
                                   </button>
                                 </Link>
