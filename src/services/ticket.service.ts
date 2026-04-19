@@ -24,14 +24,17 @@ export interface PriceResponse {
   totalSeat: number;
 }
 
-// Định nghĩa cấu trúc cho Ticket (Điều chỉnh theo Backend của bạn)
 export interface TicketInfo {
   id: number;
-  code: string;
+  bookingCode: string;
   totalAmount: number;
   status: string;
-  bookingDate: string;
-  // Thêm các field khác nếu cần
+  distanceKm: number;
+  accountId: number;
+  planId: number;
+  carId: number;
+  note?: string;
+  bookingDate?: string;
   [key: string]: unknown;
 }
 
@@ -173,5 +176,18 @@ export const getMyTickets = async (): Promise<TicketInfo[]> => {
   } catch (error) {
     console.error("Lỗi khi lấy danh sách vé:", error);
     return [];
+  }
+};
+export const updateTicketStatus = async (ticketId: number, status: string) => {
+  try {
+    const response = await ticketClient.put(`/ticket/${ticketId}/status`, status, {
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi cập nhật status:", error);
+    throw error;
   }
 };

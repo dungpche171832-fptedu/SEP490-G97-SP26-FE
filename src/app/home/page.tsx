@@ -21,13 +21,11 @@ export default function HomePage() {
       setLoading(true);
       try {
         const data = await cityService.getAllCities();
-        // Xử lý dữ liệu trả về theo đúng kiểu City[] để tránh lỗi 'any'
         const cityData: City[] = Array.isArray(data)
           ? data
           : (data as { content?: City[] })?.content || [];
         setCities(cityData);
       } catch {
-        // Bỏ biến 'error' không dùng đến để tránh lỗi @typescript-eslint/no-unused-vars
         message.error("Không thể tải danh sách tỉnh thành");
       } finally {
         setLoading(false);
