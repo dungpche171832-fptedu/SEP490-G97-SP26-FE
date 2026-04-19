@@ -1,5 +1,5 @@
 "use client";
-
+import { getBranchDetail } from "@/services/branch.service";
 import React, { useState, useEffect, Suspense } from "react";
 import {
   ArrowRightOutlined,
@@ -47,8 +47,24 @@ interface PlanData {
   start_station?: Station;
   endStations: Station[];
   end_stations?: Station[];
-  car?: Car;
-  carInfo?: Car;
+  car?: Car & {
+    branch?: {
+      id?: number;
+      code?: string;
+      name?: string;
+      imageUrl?: string;
+    };
+  };
+  carInfo?: Car & {
+    branchId?: number;
+    branchCode?: string;
+    branch?: {
+      id?: number;
+      code?: string;
+      name?: string;
+      imageUrl?: string;
+    };
+  };
   seats?: Seat[];
   listSeats?: Seat[];
   carId?: number;
@@ -182,20 +198,28 @@ function AddTicketContent() {
       message.warning("Vui lòng chọn chỗ ngồi trước khi đặt!");
       return;
     }
+
     setIsFetchingImage(true);
     setIsPaymentModalOpen(true);
+
     try {
-      const branchCode = planDetail?.carInfo?.branchCode || planDetail?.car?.branch?.code;
-      if (branchCode) {
-        const token = window.localStorage.getItem("token");
-        const res = await fetch(`http://localhost:8080/api/branches?code=${branchCode}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        const branchData = data.result || data.data || data;
-        if (branchData.imageUrl) setBranchImage(branchData.imageUrl);
+      setBranchImage("");
+
+      const branchId =
+        planDetail?.carInfo?.branchId ||
+        planDetail?.carInfo?.branch?.id ||
+        planDetail?.car?.branch?.id;
+
+      if (!branchId) {
+        return;
       }
-    } catch {
+
+      const branchDetail = await getBranchDetail(String(branchId));
+      if (branchDetail?.imageUrl) {
+        setBranchImage(branchDetail.imageUrl);
+      }
+    } catch (error) {
+      console.error("Không lấy được QR chi nhánh:", error);
       setBranchImage("");
     } finally {
       setIsFetchingImage(false);
@@ -209,6 +233,11 @@ function AddTicketContent() {
       const payload: TicketAddRequest = {
         planId: planId,
         carId: planDetail?.car?.id || planDetail?.carId || 0,
+        branchId:
+          planDetail?.carInfo?.branchId ||
+          planDetail?.carInfo?.branch?.id ||
+          planDetail?.car?.branch?.id ||
+          0,
         startStationId: start?.id || start?.stationId || 0,
         endStationId: selectedDropOff!,
         distanceKm: distanceKm,
@@ -497,13 +526,14 @@ function AddTicketContent() {
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight">Thanh toán vé xe</h3>
             <p className="text-blue-100 text-xs mt-1 opacity-80">Quét mã QR để hoàn tất đặt chỗ</p>
+            <p>Nội dung chuyển khoản vui lòng nhập theo mã số dưới đây;</p>
           </div>
           <div className="p-8">
             <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center">
               {isFetchingImage ? (
                 <Spin size="large" />
               ) : branchImage ? (
-                <Image
+                <image
                   src={branchImage}
                   alt="QR Payment"
                   width={300}
