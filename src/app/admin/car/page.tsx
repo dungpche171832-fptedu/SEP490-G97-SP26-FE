@@ -15,7 +15,7 @@ import {
 
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
-import { getCars, getBranchesForSelect, Car, Branch } from "@/services/car.service";
+import { getCars, getBranchesForSelect, Car, Branch } from "@/services/carService";
 
 // 🔴 Hàm mô phỏng lấy thông tin User đang đăng nhập.
 // Duy cần thay thế logic này bằng Context hoặc Redux để lấy user thật sau login.

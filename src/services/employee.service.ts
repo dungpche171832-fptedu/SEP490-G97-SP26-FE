@@ -1,65 +1,53 @@
-const API_URL = "http://localhost:8080/api/employees";
+import axios from "axios";
 
-export const getEmployees = async (page = 1) => {
-  const token = localStorage.getItem("token");
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
-  const res = await fetch(`${API_URL}?page=${page}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+const employeeClient = axios.create({
+  baseURL: apiBaseUrl,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-  if (!res.ok) throw new Error("Failed to fetch employees");
+employeeClient.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = window.localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
 
-  return res.json();
-};
+export interface EmployeeRole {
+  roleId: number;
+  name: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  isActive?: boolean | null;
+}
 
-export const getEmployeeById = async (id: number) => {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`http://localhost:8080/api/employees/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch employee");
-
-  return res.json();
-};
-
-export const createEmployee = async (data: EmployeeForm) => {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) throw new Error("Failed to create employee");
-
-  return res.json();
-};
-
-export const deleteEmployee = async (id: number) => {
-  const token = localStorage.getItem("token");
-
-  await fetch(`${API_URL}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
-
-interface EmployeeForm {
+export interface EmployeeItem {
+  accountId: number;
+  password?: string;
   fullName: string;
   email: string;
-  password: string;
-  role: string;
-  branchId: number;
+  phone: string;
+  role: EmployeeRole | null;
+  branchId: number | null;
+  status?: string | null;
+  createdAt?: string | null;
+  isActive?: boolean | null;
+  updatedAt?: string | null;
+}
+
+export interface EmployeeListResponse {
+  accounts: EmployeeItem[];
+  message: string;
+  totalCount: number;
+}
+
+export async function getAllEmployees(): Promise<EmployeeListResponse> {
+  const response = await employeeClient.get<EmployeeListResponse>("/account");
+  return response.data;
 }

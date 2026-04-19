@@ -15,7 +15,7 @@ import {
 
 import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
-import { getCarDetail, type CarViewResponse } from "@/services/car.service";
+import { getCarDetail, type CarViewResponse } from "@/services/carService";
 
 // ============================================================================
 // 1. INFO FIELD HELPER COMPONENT (Tránh lỗi render lồng nhau)

@@ -25,3 +25,15 @@ export interface PlanResponse {
   message: string;
   totalCount: number;
 }
+export interface CreatePlanPayload {
+  code: string;
+  carId: number;
+  accountId: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  stations: {
+    stationOrder: number;
+    stationName: string;
+  }[];
+}

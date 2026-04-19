@@ -32,7 +32,7 @@ export default function PlanManagementPage() {
 
       const response: PlanResponse = await planService.getListPlans();
 
-      if (response && response.plans) {
+      if (response?.plans) {
         const mappedData: PlanTableItem[] = response.plans.map((item: Plan) => ({
           id: item.id,
           key: String(item.id),
@@ -163,7 +163,7 @@ export default function PlanManagementPage() {
 
   return (
     <div className="w-full">
-      <div className="max-w-[1440px]">
+      <div className="mx-auto w-full max-w-[1440px]">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="text-2xl font-extrabold uppercase tracking-tight text-slate-800">
@@ -177,6 +177,7 @@ export default function PlanManagementPage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
+            onClick={() => router.push("/admin/managePlan/create")}
             className="h-11 rounded-lg border-none bg-blue-600 px-6 font-bold shadow-md transition-all hover:bg-blue-700"
           >
             Thêm lịch trình

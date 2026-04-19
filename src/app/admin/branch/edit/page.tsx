@@ -18,7 +18,6 @@ import Header from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
 import { getBranchDetail, updateBranch, type AddBranchRequest } from "@/services/branch.service";
 
-// ✅ Định nghĩa kiểu dữ liệu cho Response lỗi từ Backend để tránh dùng 'any'
 interface ApiErrorResponse {
   code?: string;
   message?: string;
@@ -32,6 +31,7 @@ export default function EditBranchPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [qrPreviewError, setQrPreviewError] = useState(false);
 
   const [formData, setFormData] = useState<AddBranchRequest>({
     code: "",
@@ -39,6 +39,7 @@ export default function EditBranchPage() {
     address: "",
     phone: "",
     email: "",
+    imageUrl: "",
     isActive: true,
     managerFullName: "",
     managerEmail: "",
@@ -67,6 +68,7 @@ export default function EditBranchPage() {
               address: data.address || "",
               phone: data.phone || "",
               email: data.email || "",
+              imageUrl: data.imageUrl || "",
               isActive: data.isActive ?? true,
               managerFullName: data.managerName || "",
               managerEmail: "",
@@ -74,6 +76,9 @@ export default function EditBranchPage() {
               managerPassword: "",
               roleId: 2,
             });
+
+            setQrPreviewError(false);
+
             setSystemInfo((prev) => ({
               ...prev,
               id: data?.id
@@ -99,10 +104,46 @@ export default function EditBranchPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleQrUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setQrPreviewError(false);
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: value,
+    }));
+  };
+
+  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      message.error("Vui lòng chọn file ảnh hợp lệ");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setQrPreviewError(false);
+      setFormData((prev) => ({
+        ...prev,
+        imageUrl: typeof reader.result === "string" ? reader.result : "",
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeQrImage = () => {
+    setQrPreviewError(false);
+    setFormData((prev) => ({
+      ...prev,
+      imageUrl: "",
+    }));
+  };
+
   const handleSubmit = async () => {
     if (!branchId) return;
 
-    // ✅ FIX BỔ SUNG: Kiểm tra các trường bắt buộc không được bỏ trống
     if (
       !formData.code?.trim() ||
       !formData.name?.trim() ||
@@ -111,25 +152,12 @@ export default function EditBranchPage() {
       !formData.address?.trim()
     ) {
       message.error("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
-      return; // ⛔ Dừng thực thi, không gọi API
+      return;
     }
 
     try {
       setSubmitting(true);
-      const res = (await updateBranch(branchId, formData)) as unknown as ApiErrorResponse;
-
-      if (res && res.code && typeof res.code === "string" && res.code.startsWith("BR-")) {
-        if (res.code === "BR-004") {
-          message.error(res.message || "Chi nhánh đang tạm nghỉ, không thể chỉnh sửa!");
-        } else if (res.code === "BR-001") {
-          message.error(res.message || "Mã chi nhánh hoặc Email đã tồn tại!");
-        } else if (res.code === "BR-006") {
-          message.error(res.message || "Số điện thoại chi nhánh đã tồn tại!");
-        } else {
-          message.error(res.message || "Có lỗi xảy ra từ hệ thống!");
-        }
-        return;
-      }
+      await updateBranch(branchId, formData);
 
       message.success("Cập nhật chi nhánh thành công!");
       router.push("/admin/branch");
@@ -159,7 +187,6 @@ export default function EditBranchPage() {
       <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
         <Header />
         <div className="p-8 h-full overflow-y-auto">
-          {/* Breadcrumb */}
           <div className="flex items-center gap-3 mb-4 text-sm font-medium">
             <Link
               href="/admin/branch"
@@ -174,9 +201,7 @@ export default function EditBranchPage() {
           <h2 className="text-2xl font-black text-slate-800 mb-8">Chỉnh sửa chi nhánh</h2>
 
           <div className="grid grid-cols-12 gap-8 max-w-7xl">
-            {/* CỘT TRÁI: FORM */}
             <div className="col-span-12 lg:col-span-8 space-y-6">
-              {/* Thông tin chi nhánh */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-2 bg-slate-50/50">
                   <InfoCircleOutlined className="text-blue-500" />
@@ -184,6 +209,7 @@ export default function EditBranchPage() {
                     Thông tin chi nhánh
                   </h3>
                 </div>
+
                 <div className="p-8 grid grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -196,6 +222,7 @@ export default function EditBranchPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 outline-none transition-all font-semibold text-[14px]"
                     />
                   </div>
+
                   <div className="flex flex-col gap-2">
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                       Tên chi nhánh <span className="text-red-500">*</span>
@@ -207,6 +234,7 @@ export default function EditBranchPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 outline-none transition-all font-semibold text-[14px]"
                     />
                   </div>
+
                   <div className="flex flex-col gap-2">
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                       Số điện thoại <span className="text-red-500">*</span>
@@ -218,6 +246,7 @@ export default function EditBranchPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 outline-none transition-all font-semibold text-[14px]"
                     />
                   </div>
+
                   <div className="flex flex-col gap-2">
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                       Email chi nhánh <span className="text-red-500">*</span>
@@ -229,10 +258,91 @@ export default function EditBranchPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 outline-none transition-all font-semibold text-[14px]"
                     />
                   </div>
+
+                  <div className="col-span-2 flex flex-col gap-3">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Mã QR
+                    </label>
+
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
+                      <div className="flex flex-col md:flex-row gap-6 items-start">
+                        <div className="w-44 h-44 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden">
+                          {formData.imageUrl && !qrPreviewError ? (
+                            <img
+                              src={formData.imageUrl}
+                              alt="QR Preview"
+                              className="w-full h-full object-contain p-2"
+                              onError={() => setQrPreviewError(true)}
+                            />
+                          ) : (
+                            <span className="text-sm text-slate-400 text-center px-3">
+                              {formData.imageUrl && qrPreviewError
+                                ? "Không thể tải ảnh QR"
+                                : "Chưa có ảnh QR"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 space-y-4">
+                          <input
+                            id="qr-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleQrFileChange}
+                            className="hidden"
+                          />
+
+                          <div className="flex flex-wrap gap-3">
+                            <label
+                              htmlFor="qr-upload"
+                              className="cursor-pointer px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all"
+                            >
+                              Chọn ảnh QR
+                            </label>
+
+                            {formData.imageUrl ? (
+                              <button
+                                type="button"
+                                onClick={removeQrImage}
+                                className="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition-all"
+                              >
+                                Xóa ảnh
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={formData.imageUrl || ""}
+                              onChange={handleQrUrlChange}
+                              placeholder="Hoặc nhập đường dẫn ảnh QR, ví dụ: https://domain.com/qr.png"
+                              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold"
+                            />
+
+                            {formData.imageUrl ? (
+                              <div className="flex flex-wrap gap-3">
+                                <button
+                                  type="button"
+                                  onClick={removeQrImage}
+                                  className="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition-all"
+                                >
+                                  Xóa đường dẫn
+                                </button>
+                              </div>
+                            ) : null}
+
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                              Bạn có thể chọn ảnh từ máy hoặc nhập URL ảnh QR.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Địa chỉ */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-2 bg-slate-50/50">
                   <EnvironmentOutlined className="text-blue-500" />
@@ -254,7 +364,6 @@ export default function EditBranchPage() {
                 </div>
               </div>
 
-              {/* Trạng thái hoạt động */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-2 bg-slate-50/50">
                   <CheckCircleOutlined className="text-blue-500" />
@@ -297,7 +406,6 @@ export default function EditBranchPage() {
               </div>
             </div>
 
-            {/* CỘT PHẢI: INFO HỆ THỐNG */}
             <div className="col-span-12 lg:col-span-4">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-24">
                 <div className="flex items-center gap-2 mb-6">

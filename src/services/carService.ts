@@ -124,10 +124,20 @@ export interface CarViewResponse {
 
 /* ================= API ================= */
 
-export const getCars = async (): Promise<CarResponse> => {
-  console.log("Calling API: http://localhost:8080/api/cars");
+// export const getCars = async (): Promise<CarResponse> => {
+//   console.log("Calling API: http://localhost:8080/api/cars");
 
-  const response = await axiosInstance.get<CarResponse>("/api/cars");
+//   const response = await axiosInstance.get<CarResponse>("/api/cars");
+
+//   return response.data;
+// };
+export const getCars = async (branchId?: number, licensePlate?: string): Promise<CarResponse> => {
+  const response = await axiosInstance.get<CarResponse>("/api/cars", {
+    params: {
+      branchId,
+      licensePlate,
+    },
+  });
 
   return response.data;
 };

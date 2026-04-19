@@ -1,175 +1,337 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getEmployees, deleteEmployee } from "@/services/employee.service";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  TeamOutlined,
+  RightOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import { Input, Select, Spin, Pagination, message } from "antd";
 
-interface Employee {
-  id: number;
-  fullName: string;
-  email: string;
-  role: string;
-  branchName: string;
-  active: boolean;
-}
+import Header from "@/components/admin/Header";
+import Sidebar from "@/components/admin/Sidebar";
+import { getAllEmployees, type EmployeeItem } from "@/services/employee.service";
 
-interface EmployeeResponse {
-  content?: Employee[];
-}
+const { Option } = Select;
 
-export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [page, setPage] = useState<number>(1);
+const getRoleLabel = (roleName?: string | null) => {
+  if (!roleName) return "Chưa phân quyền";
 
-  // ================= FETCH DATA =================
+  switch (roleName.toLowerCase()) {
+    case "admin":
+      return "Quản trị viên";
+    case "manager":
+      return "Quản lý";
+    case "staff":
+      return "Nhân viên";
+    default:
+      return roleName;
+  }
+};
+
+const getStatusLabel = (employee: EmployeeItem) => {
+  if (employee.status) return employee.status;
+  if (employee.isActive === true) return "ACTIVE";
+  if (employee.isActive === false) return "INACTIVE";
+  return "UNKNOWN";
+};
+
+const getStatusClass = (status: string) => {
+  switch (status.toUpperCase()) {
+    case "ACTIVE":
+      return "bg-emerald-50 text-emerald-600";
+    case "INACTIVE":
+      return "bg-slate-100 text-slate-500";
+    case "LOCKED":
+      return "bg-red-50 text-red-600";
+    default:
+      return "bg-amber-50 text-amber-600";
+  }
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+};
+
+export default function EmployeePage() {
+  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [keyword, setKeyword] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   useEffect(() => {
-    const loadEmployees = async () => {
+    const fetchEmployees = async () => {
       try {
-        const data: EmployeeResponse | Employee[] = await getEmployees(page);
-
-        if (Array.isArray(data)) {
-          setEmployees(data);
-        } else {
-          setEmployees(data.content ?? []);
-        }
-      } catch (err) {
-        console.error(err);
+        setLoading(true);
+        const response = await getAllEmployees();
+        setEmployees(response.accounts || []);
+      } catch (error) {
+        console.error("Lỗi lấy danh sách nhân viên:", error);
+        message.error("Không thể tải danh sách nhân viên");
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadEmployees();
-  }, [page]);
+    fetchEmployees();
+  }, []);
 
-  // ================= DELETE =================
-  const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa nhân viên này?")) return;
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((employee) => {
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      const roleName = employee.role?.name?.toLowerCase() || "";
+      const status = getStatusLabel(employee).toLowerCase();
 
-    try {
-      await deleteEmployee(id);
+      const matchKeyword =
+        !normalizedKeyword ||
+        employee.fullName?.toLowerCase().includes(normalizedKeyword) ||
+        employee.email?.toLowerCase().includes(normalizedKeyword) ||
+        employee.phone?.toLowerCase().includes(normalizedKeyword);
 
-      const data: EmployeeResponse | Employee[] = await getEmployees(page);
+      const matchRole = roleFilter === "all" || roleName === roleFilter;
+      const matchStatus = statusFilter === "all" || status === statusFilter;
 
-      if (Array.isArray(data)) {
-        setEmployees(data);
-      } else {
-        setEmployees(data.content ?? []);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      return matchKeyword && matchRole && matchStatus;
+    });
+  }, [employees, keyword, roleFilter, statusFilter]);
 
-  // ================= EDIT =================
-  const handleEdit = (emp: Employee) => {
-    console.log("Edit employee:", emp);
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword, roleFilter, statusFilter]);
+
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredEmployees.slice(startIndex, endIndex);
+  }, [filteredEmployees, currentPage, pageSize]);
 
   return (
-    <div className="grid grid-cols-[240px_1fr] min-h-screen">
-      {/* SIDEBAR */}
-      <div className="bg-white border-r">
-        <div className="p-6 font-bold text-lg">🚍 Xe Limou</div>
+    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-900">
+      <Sidebar />
 
-        <nav className="px-4 space-y-2">
-          <div className="p-3 rounded-lg bg-blue-100 text-blue-600 font-medium">Nhân viên</div>
-          <div className="p-3 rounded-lg hover:bg-gray-100 cursor-pointer">Chi nhánh</div>
-          <div className="p-3 rounded-lg hover:bg-gray-100 cursor-pointer">Xe</div>
-        </nav>
-      </div>
+      <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
+        <Header />
 
-      {/* CONTENT */}
-      <div className="bg-gray-100">
-        <div className="p-8">
-          {/* HEADER */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">Danh sách nhân viên</h1>
-              <p className="text-gray-500">Quản lý thông tin nhân viên trong hệ thống.</p>
-            </div>
-
-            <button className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700">
-              + Thêm nhân viên
-            </button>
+        <div className="p-8 h-full overflow-y-auto">
+          <div className="flex items-center gap-3 mb-4 text-sm font-medium">
+            <Link href="/admin" className="text-slate-400 hover:text-blue-600 transition-colors">
+              Dashboard
+            </Link>
+            <RightOutlined className="text-slate-300 text-[10px]" />
+            <span className="text-slate-800 font-bold">Quản lý nhân viên</span>
           </div>
 
-          {/* TABLE */}
-          <div className="bg-white rounded-xl shadow mt-6 overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-100 text-gray-600 text-sm">
-                <tr>
-                  <th className="p-4">Họ tên</th>
-                  <th>Email</th>
-                  <th>Chức vụ</th>
-                  <th>Chi nhánh</th>
-                  <th>Trạng thái</th>
-                  <th className="text-center">Thao tác</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {employees.length > 0 ? (
-                  employees.map((emp) => (
-                    <tr key={emp.id} className="border-t hover:bg-gray-50">
-                      <td className="p-4 font-medium">{emp.fullName}</td>
-                      <td>{emp.email}</td>
-                      <td>{emp.role}</td>
-                      <td>{emp.branchName}</td>
-                      <td>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            emp.active ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-600"
-                          }`}
-                        >
-                          {emp.active ? "Hoạt động" : "Khóa"}
-                        </span>
-                      </td>
-
-                      <td className="text-center space-x-3">
-                        <button
-                          onClick={() => handleEdit(emp)}
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(emp.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="text-center p-6 text-gray-400">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            {/* PAGINATION */}
-            <div className="flex justify-end p-4 space-x-2">
-              <button
-                onClick={() => setPage((prev) => prev - 1)}
-                disabled={page === 1}
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              >
-                Prev
-              </button>
-
-              <button
-                onClick={() => setPage((prev) => prev + 1)}
-                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Next
-              </button>
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h2 className="text-2xl font-black text-slate-800 mb-1">Quản lý nhân viên</h2>
+              <p className="text-slate-500 text-sm">
+                Theo dõi danh sách tài khoản, vai trò và trạng thái hoạt động.
+              </p>
             </div>
+
+            <Link href="/admin/employee/add">
+              <button className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-200 text-sm">
+                <PlusOutlined />
+                Thêm nhân viên
+              </button>
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/70">
+              <TeamOutlined className="text-blue-500" />
+              <h3 className="font-bold text-slate-700 uppercase tracking-wider text-xs">
+                Danh sách nhân viên
+              </h3>
+            </div>
+
+            <div className="p-6 border-b border-slate-100">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  size="large"
+                  allowClear
+                  prefix={<SearchOutlined className="text-slate-400" />}
+                  placeholder="Tìm theo tên, email, số điện thoại"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+
+                <Select size="large" value={roleFilter} onChange={setRoleFilter}>
+                  <Option value="all">Tất cả vai trò</Option>
+                  <Option value="admin">Quản trị viên</Option>
+                  <Option value="manager">Quản lý</Option>
+                  <Option value="staff">Nhân viên</Option>
+                </Select>
+
+                <Select size="large" value={statusFilter} onChange={setStatusFilter}>
+                  <Option value="all">Tất cả trạng thái</Option>
+                  <Option value="active">Đang hoạt động</Option>
+                  <Option value="inactive">Ngưng hoạt động</Option>
+                  <Option value="locked">Bị khóa</Option>
+                  <Option value="unknown">Chưa xác định</Option>
+                </Select>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="py-20 flex items-center justify-center">
+                <Spin size="large" />
+              </div>
+            ) : filteredEmployees.length === 0 ? (
+              <div className="py-20 text-center">
+                <div className="w-14 h-14 rounded-full bg-slate-100 mx-auto mb-4 flex items-center justify-center text-slate-400">
+                  <UserOutlined />
+                </div>
+                <h4 className="text-base font-bold text-slate-700 mb-1">Không có dữ liệu</h4>
+                <p className="text-sm text-slate-400">
+                  Không tìm thấy nhân viên phù hợp với bộ lọc hiện tại.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1100px]">
+                    <thead className="bg-slate-50">
+                      <tr className="text-left">
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Nhân viên
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Liên hệ
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Vai trò
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Chi nhánh
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Trạng thái
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Ngày tạo
+                        </th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
+                          Thao tác
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {paginatedEmployees.map((employee) => {
+                        const status = getStatusLabel(employee);
+
+                        return (
+                          <tr
+                            key={employee.accountId}
+                            className="border-t border-slate-100 hover:bg-slate-50/60 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                  {employee.fullName?.trim()?.charAt(0)?.toUpperCase() || "U"}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-800 text-sm">
+                                    {employee.fullName || "Chưa cập nhật"}
+                                  </p>
+                                  <p className="text-xs text-slate-400">ID: {employee.accountId}</p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-slate-700">
+                                  {employee.email || "—"}
+                                </p>
+                                <p className="text-xs text-slate-400">{employee.phone || "—"}</p>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600">
+                                {getRoleLabel(employee.role?.name)}
+                              </span>
+                            </td>
+
+                            <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                              {employee.branchId ?? "—"}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(status)}`}
+                              >
+                                {status}
+                              </span>
+                            </td>
+
+                            <td className="px-6 py-4 text-sm text-slate-500">
+                              {formatDateTime(employee.createdAt)}
+                            </td>
+
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Link href={`/admin/employee/view?id=${employee.accountId}`}>
+                                  <button className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all">
+                                    Chi tiết
+                                  </button>
+                                </Link>
+
+                                <Link href={`/admin/employee/edit?id=${employee.accountId}`}>
+                                  <button className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all">
+                                    Sửa
+                                  </button>
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <p className="text-sm text-slate-500">
+                    Tổng số nhân viên:{" "}
+                    <span className="font-bold text-slate-700">{filteredEmployees.length}</span>
+                  </p>
+
+                  <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={filteredEmployees.length}
+                    showSizeChanger
+                    pageSizeOptions={["5", "10", "20", "50"]}
+                    onChange={(page, size) => {
+                      setCurrentPage(page);
+                      setPageSize(size);
+                    }}
+                    showTotal={(total, range) => `${range[0]}-${range[1]} / ${total} nhân viên`}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

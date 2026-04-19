@@ -16,7 +16,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 
 // Services
-import { addCar, getBranchesForSelect, Branch, CarAddRequest } from "@/services/car.service";
+import { addCar, getBranchesForSelect, Branch, CarAddRequest } from "@/services/carService";
 
 interface CarFormValues {
   licensePlate: string;

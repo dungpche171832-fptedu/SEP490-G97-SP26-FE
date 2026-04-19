@@ -11,6 +11,7 @@ export interface TicketAddRequest {
   planId: number;
   carId: number;
   seatIds: number[];
+  branchId?: number;
   startStationId: number;
   endStationId: number;
   distanceKm: number;

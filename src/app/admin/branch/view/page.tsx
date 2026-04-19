@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
@@ -137,11 +138,44 @@ export default function BranchViewPage() {
               </div>
 
               <div className="p-6">
-                <div className="grid grid-cols-3 gap-y-8 gap-x-12">
-                  <InfoBlock label="MÃ CHI NHÁNH" value={branch.code} />
-                  <InfoBlock label="TÊN CHI NHÁNH" value={branch.name} />
-                  <InfoBlock label="SỐ ĐIỆN THOẠI" value={branch.phone} />
-                  <InfoBlock label="EMAIL CHI NHÁNH" value={branch.email} />
+                <div className="grid grid-cols-12 gap-y-8 gap-x-12">
+                  <div className="col-span-12 md:col-span-4">
+                    <InfoBlock label="MÃ CHI NHÁNH" value={branch.code} />
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <InfoBlock label="TÊN CHI NHÁNH" value={branch.name} />
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <InfoBlock label="SỐ ĐIỆN THOẠI" value={branch.phone} />
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <InfoBlock label="EMAIL CHI NHÁNH" value={branch.email} />
+                  </div>
+
+                  <div className="col-span-12 md:col-span-8">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        MÃ QR
+                      </label>
+
+                      <div className="min-h-[180px] rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center p-4">
+                        {branch.imageUrl ? (
+                          <img
+                            src={branch.imageUrl}
+                            alt={`QR chi nhánh ${branch.name}`}
+                            className="w-40 h-40 object-contain rounded-lg border border-slate-200 bg-white p-2"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-400 text-sm">
+                            Chi nhánh này chưa có mã QR
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
