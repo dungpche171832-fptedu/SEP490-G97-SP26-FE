@@ -144,3 +144,29 @@ export async function changePassword(data: {
 
   throw new Error("Đổi mật khẩu thất bại");
 }
+import axios from "axios";
+
+const axiosInstance = axios.create({
+  baseURL: "http://localhost:8080",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+export const getAccounts = async () => {
+  const response = await axiosInstance.get("/api/account");
+  return response.data;
+};

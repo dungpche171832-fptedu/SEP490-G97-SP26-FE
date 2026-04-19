@@ -15,19 +15,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }}
     >
       <RoleGuard allowedRoles={["admin", "staff", "manager"]}>
-        <div className="flex min-h-screen">
+        <div className="min-h-screen bg-slate-50">
           <Sidebar />
+          <Header />
 
-          <div className="flex-1 flex flex-col">
-            <Header />
-
-            <main
-              className="subpixel-antialiased p-6"
-              style={{ fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif" }}
-            >
-              {children}
-            </main>
-          </div>
+          <main
+            className="ml-64 min-h-screen pt-16 p-6 subpixel-antialiased"
+            style={{ fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif" }}
+          >
+            {children}
+          </main>
         </div>
       </RoleGuard>
     </ConfigProvider>

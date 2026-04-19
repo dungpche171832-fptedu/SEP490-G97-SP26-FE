@@ -26,6 +26,19 @@ export interface UpdatePlanStatusPayload {
   status: string;
 }
 
+export interface CreatePlanPayload {
+  code: string;
+  carId: number;
+  accountId: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  stations: {
+    stationId: number;
+    stationOrder: number;
+  }[];
+}
+
 export const planService = {
   getListPlans: async (): Promise<PlanResponse> => {
     const token = localStorage.getItem("token");
@@ -92,6 +105,29 @@ export const planService = {
     }
 
     if (!response.ok) throw new Error("Không cập nhật được trạng thái lịch trình");
+
+    return await response.json();
+  },
+  createPlan: async (payload: CreatePlanPayload): Promise<PlanDetailResponse> => {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch("http://localhost:8080/api/plans", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Không thêm được lịch trình");
+    }
 
     return await response.json();
   },
