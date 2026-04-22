@@ -3,7 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FlagOutlined } from "@ant-design/icons";
+import { FlagOutlined, CalendarOutlined, BarcodeOutlined, DollarOutlined } from "@ant-design/icons";
 
 const NavItem = ({
   icon,
@@ -71,6 +71,25 @@ export default function Sidebar() {
           label="Điểm dừng"
           href="/admin/station"
           active={pathname?.startsWith("/admin/station")}
+        />
+        <NavItem
+          icon={<CalendarOutlined style={{ fontSize: "20px" }} />}
+          label="Quản lý lịch trình"
+          href="/admin/managePlan"
+          active={pathname?.startsWith("/admin/managePlan")}
+        />
+
+        <NavItem
+          icon={<BarcodeOutlined style={{ fontSize: "20px" }} />}
+          label="Quản lý vé"
+          href="/admin/manageTicket"
+          active={pathname?.startsWith("/admin/manageTicket")}
+        />
+        <NavItem
+          icon={<DollarOutlined style={{ fontSize: "20px" }} />}
+          label="Rules"
+          href="/admin/rules"
+          active={pathname?.startsWith("/admin/rules")}
         />
       </nav>
     </aside>

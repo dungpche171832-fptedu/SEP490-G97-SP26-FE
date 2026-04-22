@@ -10,7 +10,7 @@ import {
 } from "@ant-design/icons";
 
 // import ProfileHeader from "@/components/profile/ProfileHeader";
-import { getAccountInfo, updateProfile, changePassword } from "@/services/account.service";
+import { getAccountInfo, updateProfile, changePassword } from "@/services/accountService";
 
 type Profile = {
   fullName: string;
