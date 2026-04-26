@@ -1,43 +1,9 @@
-import { PlanResponse } from "../model/plan";
-
-export interface PlanDetailResponse {
-  id: number;
-  code: string;
-  carId: number;
-  carLicensePlate: string;
-  accountId: number;
-  driverName: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  stations?: {
-    stationId: number;
-    stationName: string;
-    stationOrder: number;
-  }[];
-  seats?: {
-    seatId: number;
-    seatNumber: string;
-    status: string;
-  }[];
-}
-
-export interface UpdatePlanStatusPayload {
-  status: string;
-}
-
-export interface CreatePlanPayload {
-  code: string;
-  carId: number;
-  accountId: number;
-  startTime: string;
-  endTime: string;
-  status: string;
-  stations: {
-    stationId: number;
-    stationOrder: number;
-  }[];
-}
+import type {
+  PlanResponse,
+  PlanDetailResponse,
+  UpdatePlanStatusPayload,
+  CreatePlanPayload,
+} from "../model/plan";
 
 export const planService = {
   getListPlans: async (): Promise<PlanResponse> => {

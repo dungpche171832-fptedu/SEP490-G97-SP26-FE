@@ -1,141 +1,58 @@
 "use client";
-
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Button, Card, DatePicker, Input, Select, message } from "antd";
+import { InfoCircleOutlined, CarOutlined, SwapOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { Button, Card, DatePicker, Input, Select, Space, message } from "antd";
-import { getCars, type Car } from "@/services/carService";
-import { getAccounts } from "@/services/accountService";
-import { getStations, type Station } from "@/services/station.service";
-import {
-  CalendarOutlined,
-  ClockCircleOutlined,
-  EnvironmentOutlined,
-  InfoCircleOutlined,
-  PlusCircleOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
-import type { Dayjs } from "dayjs";
-import type { CreatePlanPayload } from "@/services/planService";
+import dayjs, { type Dayjs } from "dayjs";
+import type { Account } from "@/model/account";
+import type { Car } from "@/model/car";
+import type { RouteResponse } from "@/model/route";
+import type { CreatePlanPayload } from "@/model/plan";
 import { planService } from "@/services/planService";
+import { getDriversByCurrentManagerBranch, getAccountInfo } from "@/services/accountService";
+import { getCarsByCurrentManagerBranch } from "@/services/carService";
+import { getRoutes, getRouteDetail } from "@/services/routeService";
 
-type StationFormItem = {
-  stationOrder: number;
-  stationId?: number;
-  stationName: string;
-};
-type DriverAccount = {
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  accountId: number;
-  password: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  role: {
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-    roleId: number;
-    name: string;
-  };
-  branchId: number;
-  status: string;
-};
-
-type AccountApiResponse = {
-  accounts?: DriverAccount[];
-  data?: DriverAccount[];
-  result?: DriverAccount[];
-};
-
-const getBranchIdFromToken = (): number | undefined => {
-  if (typeof window === "undefined") return undefined;
-
-  const token = localStorage.getItem("token");
-  if (!token) return undefined;
-
-  try {
-    const payloadBase64 = token.split(".")[1];
-    const payloadJson = atob(payloadBase64);
-    const payload = JSON.parse(payloadJson);
-    // console.log("TOKEN PAYLOAD:", payload);
-
-    const branchId = payload.branchId ?? payload.branchID ?? payload.branch_id;
-
-    if (branchId === undefined || branchId === null) return undefined;
-
-    return Number(branchId);
-  } catch (error) {
-    console.error("Không đọc được branchId từ token:", error);
-    return undefined;
-  }
-};
 export default function CreatePlanPage() {
   const router = useRouter();
 
-  const [code, setCode] = useState("LT-2026-001");
-  const [status, setStatus] = useState("ACTIVE");
-  const [carId, setCarId] = useState<number | undefined>(undefined);
-  const [accountId, setAccountId] = useState<number | undefined>(undefined);
-  const [startTime, setStartTime] = useState<Dayjs | null>(null);
-  const [endTime, setEndTime] = useState<Dayjs | null>(null);
+  const [planCode] = useState(() => `VT-${dayjs().format("YYYYMMDDHHmmss")}`);
+
+  const [drivers, setDrivers] = useState<Account[]>([]);
+  const [driverLoading, setDriverLoading] = useState(false);
+
   const [cars, setCars] = useState<Car[]>([]);
-  const [carsLoading, setCarsLoading] = useState(false);
-  const [drivers, setDrivers] = useState<DriverAccount[]>([]);
-  const [driversLoading, setDriversLoading] = useState(false);
-  // const [stationOptionsData, setStationOptionsData] = useState<any[]>([]);
-  const [stationOptionsData, setStationOptionsData] = useState<Station[]>([]);
-  const [stationsLoading, setStationsLoading] = useState(false);
-  const [stations, setStations] = useState<StationFormItem[]>([
-    { stationOrder: 1, stationId: undefined, stationName: "" },
-    { stationOrder: 2, stationId: undefined, stationName: "" },
-  ]);
+  const [carLoading, setCarLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchCars = async () => {
-      try {
-        setCarsLoading(true);
+  const [routes, setRoutes] = useState<RouteResponse[]>([]);
+  const [routeLoading, setRouteLoading] = useState(false);
 
-        const branchId = getBranchIdFromToken();
-        const response = await getCars(branchId);
+  const [selectedDepartureRoute, setSelectedDepartureRoute] = useState<RouteResponse | null>(null);
 
-        setCars(response.cars || []);
-      } catch (error) {
-        console.error("Lỗi lấy danh sách xe:", error);
-        message.error("Không tải được danh sách xe");
-      } finally {
-        setCarsLoading(false);
-      }
-    };
+  const [selectedReturnRoute, setSelectedReturnRoute] = useState<RouteResponse | null>(null);
 
-    fetchCars();
-  }, []);
+  const [returnRouteLoading, setReturnRouteLoading] = useState(false);
+
+  const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
+  const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
+
+  const [departureTime, setDepartureTime] = useState<Dayjs | null>(null);
+  const [returnStartTime, setReturnStartTime] = useState<Dayjs | null>(null);
+
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        setDriversLoading(true);
+        setDriverLoading(true);
 
-        const branchId = getBranchIdFromToken();
-        const response = (await getAccounts()) as AccountApiResponse;
-
-        const accounts: DriverAccount[] =
-          response.accounts ?? response.data ?? response.result ?? [];
-
-        const filteredDrivers = accounts.filter((item) => {
-          const roleName = String(item.role?.name || "").toLowerCase();
-          const itemBranchId = item.branchId;
-
-          return roleName === "staff" && Number(itemBranchId) === Number(branchId);
-        });
-
-        setDrivers(filteredDrivers);
-      } catch (error) {
-        console.error("Lỗi lấy danh sách tài xế:", error);
-        message.error("Không tải được danh sách tài xế");
+        const data = await getDriversByCurrentManagerBranch();
+        setDrivers(data);
+      } catch (error: unknown) {
+        console.error(error);
+        message.error("Không thể tải danh sách tài xế");
       } finally {
-        setDriversLoading(false);
+        setDriverLoading(false);
       }
     };
 
@@ -143,371 +60,459 @@ export default function CreatePlanPage() {
   }, []);
 
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchCars = async () => {
       try {
-        setStationsLoading(true);
-        const response = await getStations();
-        setStationOptionsData(response.stations || []);
-      } catch (error) {
-        console.error("Lỗi lấy danh sách trạm:", error);
-        message.error("Không tải được danh sách trạm");
+        setCarLoading(true);
+
+        const data = await getCarsByCurrentManagerBranch();
+        setCars(data);
+      } catch (error: unknown) {
+        console.error(error);
+        message.error("Không thể tải danh sách xe");
       } finally {
-        setStationsLoading(false);
+        setCarLoading(false);
       }
     };
 
-    fetchStations();
+    fetchCars();
   }, []);
-  const carOptions = cars.map((car) => ({
-    value: car.id,
-    label: `${car.licensePlate} - ${car.branch?.name || "Không rõ chi nhánh"}`,
-  }));
-  const driverOptions = drivers.map((driver) => ({
-    value: driver.accountId,
-    label: `${driver.fullName} - ${driver.email}`,
-  }));
-  const stationOptions = stationOptionsData.map((station) => ({
-    value: station.id,
-    label: `${station.name} - ${station.cityName}`,
-  }));
-  const [submitting, setSubmitting] = useState(false);
 
-  const durationText = useMemo(() => {
-    if (!startTime || !endTime) return "Chưa xác định";
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        setRouteLoading(true);
 
-    const diffMinutes = dayjs(endTime).diff(dayjs(startTime), "minute");
-    if (diffMinutes <= 0) return "Chưa xác định";
-
-    const hours = Math.floor(diffMinutes / 60);
-    const minutes = diffMinutes % 60;
-
-    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h`;
-    return `${minutes}m`;
-  }, [startTime, endTime]);
-
-  const handleStationChange = (index: number, stationId: number) => {
-    const selectedStation = stationOptionsData.find((item) => item.id === stationId);
-
-    setStations((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              stationId,
-              stationName: selectedStation?.name || "",
-            }
-          : item,
-      ),
-    );
-  };
-
-  const handleAddStation = () => {
-    setStations((prev) => [
-      ...prev,
-      {
-        stationOrder: prev.length + 1,
-        stationName: "",
-      },
-    ]);
-  };
-
-  const handleRemoveStation = (index: number) => {
-    const updated = stations
-      .filter((_, i) => i !== index)
-      .map((item, i) => ({
-        ...item,
-        stationOrder: i + 1,
-      }));
-
-    setStations(updated);
-  };
-
-  const handleSubmit = async () => {
-    if (!code.trim()) {
-      message.error("Vui lòng nhập mã lịch trình");
-      return;
-    }
-
-    if (carId == null) {
-      message.error("Vui lòng chọn xe");
-      return;
-    }
-
-    if (accountId == null) {
-      message.error("Vui lòng chọn tài xế");
-      return;
-    }
-
-    if (!startTime || !endTime) {
-      message.error("Vui lòng chọn thời gian khởi hành và kết thúc");
-      return;
-    }
-
-    const validStations = stations.filter(
-      (item) => item.stationId !== undefined && item.stationId !== null,
-    );
-
-    if (validStations.length < 2) {
-      message.error("Cần ít nhất 2 trạm dừng");
-      return;
-    }
-
-    const payload: CreatePlanPayload = {
-      code: code.trim(),
-      carId,
-      accountId,
-      startTime: dayjs(startTime).format("YYYY-MM-DDTHH:mm:ss"),
-      endTime: dayjs(endTime).format("YYYY-MM-DDTHH:mm:ss"),
-      status,
-      stations: validStations.map((item, index) => ({
-        stationId: item.stationId as number,
-        stationOrder: index + 1,
-      })),
+        const data = await getRoutes();
+        setRoutes(data);
+      } catch (error: unknown) {
+        console.error(error);
+        message.error("Không thể tải danh sách tuyến đường");
+      } finally {
+        setRouteLoading(false);
+      }
     };
 
+    fetchRoutes();
+  }, []);
+
+  const handleDepartureRouteChange = async (routeId: number) => {
     try {
-      setSubmitting(true);
-      console.log("CREATE PLAN PAYLOAD:", payload);
+      setRouteLoading(true);
+      setReturnRouteLoading(true);
+      setSelectedDepartureRoute(null);
+      setSelectedReturnRoute(null);
+
+      const departureRoute = await getRouteDetail(routeId);
+      setSelectedDepartureRoute(departureRoute);
+
+      if (!departureRoute.routeRevertId) {
+        message.warning("Tuyến đường này chưa có chiều về");
+        return;
+      }
+
+      const returnRoute = await getRouteDetail(departureRoute.routeRevertId);
+      setSelectedReturnRoute(returnRoute);
+    } catch (error: unknown) {
+      console.error(error);
+      message.error("Không thể tải chi tiết tuyến đường");
+    } finally {
+      setRouteLoading(false);
+      setReturnRouteLoading(false);
+    }
+  };
+
+  const departureStationNames =
+    selectedDepartureRoute?.stations
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((station) => station.stationName) || [];
+
+  const returnStationNames =
+    selectedReturnRoute?.stations
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((station) => station.stationName) || [];
+
+  const handleSavePlan = async () => {
+    try {
+      if (!selectedDriverId) {
+        message.error("Vui lòng chọn tài xế");
+        return;
+      }
+
+      if (!selectedCarId) {
+        message.error("Vui lòng chọn xe");
+        return;
+      }
+
+      if (!selectedDepartureRoute) {
+        message.error("Vui lòng chọn tuyến đường chiều đi");
+        return;
+      }
+
+      if (!selectedReturnRoute) {
+        message.error("Không tìm thấy tuyến đường chiều về");
+        return;
+      }
+
+      if (!departureTime) {
+        message.error("Vui lòng chọn thời gian xuất phát chiều đi");
+        return;
+      }
+
+      if (!returnStartTime) {
+        message.error("Vui lòng chọn thời gian xuất phát chiều về");
+        return;
+      }
+
+      if (returnStartTime.isBefore(departureTime)) {
+        message.error("Thời gian xuất phát về phải sau thời gian xuất phát chiều đi");
+        return;
+      }
+
+      setSaving(true);
+
+      const currentAccount = await getAccountInfo();
+
+      const payload: CreatePlanPayload = {
+        code: planCode,
+        routeId: selectedDepartureRoute.id,
+        carId: selectedCarId,
+        accountId: selectedDriverId,
+        branchId: currentAccount.branchId,
+        startTime: departureTime.toISOString(),
+        returnStartTime: returnStartTime.toISOString(),
+        status: "ACTIVE",
+      };
+
       await planService.createPlan(payload);
+
       message.success("Tạo lịch trình thành công");
       router.push("/admin/managePlan");
     } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : "Không thể tạo lịch trình";
-      message.error(errorMsg);
+      console.error(error);
+      message.error("Tạo lịch trình thất bại");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl pb-10">
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="min-h-screen bg-[#F7F8FC] px-7 py-6">
+      {/* Header */}
+      <div className="mb-8 flex items-start justify-between">
         <div>
-          <p className="mb-2 text-sm text-slate-400">Quản lý &gt; Lịch trình &gt; Tạo mới</p>
-          <div className="flex items-center gap-3">
-            <CalendarOutlined className="text-2xl text-blue-600" />
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-800">
-              Tạo Lịch Trình Mới
-            </h1>
+          <div className="mb-2 text-sm font-medium text-[#667085]">
+            Quản lý <span className="mx-1">/</span> Lịch trình <span className="mx-1">/</span> Tạo
+            mới
+          </div>
+
+          <h1 className="text-[32px] font-extrabold leading-tight text-[#1D2939]">
+            Tạo Lịch Trình Mới
+          </h1>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            className="h-12 min-w-[82px] rounded-xl border-[#D0D5DD] text-[15px] font-semibold"
+            onClick={() => router.back()}
+          >
+            Hủy
+          </Button>
+
+          <Button
+            type="primary"
+            loading={saving}
+            onClick={handleSavePlan}
+            className="h-12 min-w-[152px] rounded-xl bg-[#1677FF] text-[15px] font-semibold shadow-none"
+          >
+            Lưu lịch trình
+          </Button>
+        </div>
+      </div>
+
+      {/* Thông tin chung */}
+      <section className="mb-9">
+        <div className="mb-4 flex items-center gap-2">
+          <InfoCircleOutlined className="text-[20px] text-[#1677FF]" />
+          <h2 className="text-[20px] font-bold text-[#1D2939]">Thông tin chung</h2>
+        </div>
+
+        <Card className="rounded-2xl border-0 shadow-[0_16px_45px_rgba(16,24,40,0.06)]">
+          <div className="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
+            <div>
+              <Label required>Mã lịch trình</Label>
+              <Input
+                value={planCode}
+                readOnly
+                className="h-11 rounded-xl border-none bg-[#F2F4F7] text-[#667085]"
+              />
+            </div>
+
+            <div>
+              <Label required>Tài xế</Label>
+              <Select
+                value={selectedDriverId}
+                placeholder="Chọn tài xế..."
+                className="h-11 w-full"
+                loading={driverLoading}
+                onChange={(value: number) => setSelectedDriverId(value)}
+                options={drivers.map((driver) => ({
+                  label: driver.fullName,
+                  value: driver.accountId,
+                }))}
+              />
+            </div>
+
+            <div>
+              <Label required>Xe</Label>
+              <Select
+                value={selectedCarId}
+                placeholder="Chọn xe..."
+                className="h-11 w-full"
+                loading={carLoading}
+                onChange={(value: number) => setSelectedCarId(value)}
+                options={cars.map((car) => ({
+                  label: `${car.licensePlate} - ${car.carType}`,
+                  value: car.id,
+                }))}
+              />
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* Chiều đi + Chiều về */}
+      <section className="grid grid-cols-1 gap-9 xl:grid-cols-2">
+        {/* Chiều đi */}
+        <TripCard
+          type="go"
+          title="Chiều Đi"
+          icon={<CarOutlined />}
+          routeLabel="Tuyến đường"
+          routeValue={selectedDepartureRoute?.id}
+          routeName={selectedDepartureRoute?.name || ""}
+          stations={departureStationNames}
+          timeLabel="Thời gian xuất phát"
+          routeLoading={routeLoading}
+          routeOptions={routes.map((route) => ({
+            label: route.name,
+            value: route.id,
+          }))}
+          onRouteChange={handleDepartureRouteChange}
+          timeValue={departureTime}
+          onTimeChange={setDepartureTime}
+        />
+
+        <TripCard
+          type="return"
+          title="Chiều Về"
+          icon={<SwapOutlined />}
+          routeLabel="Tuyến đường về"
+          routeName={selectedReturnRoute?.name || ""}
+          stations={returnStationNames}
+          timeLabel="Thời gian xuất phát về"
+          routeLoading={returnRouteLoading}
+          timeValue={returnStartTime}
+          onTimeChange={setReturnStartTime}
+          auto
+        />
+      </section>
+
+      {/* Box trống phía dưới giống Figma */}
+      <div className="mt-28 h-[160px] rounded-2xl bg-white shadow-[0_16px_45px_rgba(16,24,40,0.05)]" />
+    </div>
+  );
+}
+
+function Label({ children, required = false }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <div className="mb-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#667085]">
+      {children} {required && <span className="text-[#F04438]">*</span>}
+    </div>
+  );
+}
+
+function TripCard({
+  type,
+  title,
+  icon,
+  routeLabel,
+  routeValue,
+  routeName,
+  stations,
+  timeLabel,
+  routeOptions = [],
+  routeLoading = false,
+  onRouteChange,
+  timeValue,
+  onTimeChange,
+  auto = false,
+}: {
+  type: "go" | "return";
+  title: string;
+  icon: React.ReactNode;
+  routeLabel: string;
+  routeValue?: number;
+  routeName: string;
+  stations: string[];
+  timeLabel: string;
+  timeValue: Dayjs | null;
+  onTimeChange: (value: Dayjs | null) => void;
+  routeOptions?: {
+    label: string;
+    value: number;
+  }[];
+  routeLoading?: boolean;
+  onRouteChange?: (routeId: number) => void;
+  auto?: boolean;
+}) {
+  const isGo = type === "go";
+
+  const mainColor = isGo ? "#1677FF" : "#12B76A";
+  const headerBg = isGo ? "#EEF6FF" : "#ECFDF3";
+  const stationBg = isGo ? "#EEF8FF" : "#ECFDF3";
+
+  return (
+    <Card
+      className="overflow-hidden rounded-2xl border-0 shadow-[0_16px_45px_rgba(16,24,40,0.06)]"
+      styles={{
+        body: {
+          padding: 0,
+        },
+      }}
+    >
+      <div className="flex min-h-[390px]">
+        <div
+          className="w-1"
+          style={{
+            backgroundColor: mainColor,
+          }}
+        />
+
+        <div className="flex-1">
+          <div
+            className="flex h-[58px] items-center gap-3 px-6"
+            style={{
+              backgroundColor: headerBg,
+            }}
+          >
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
+              style={{
+                backgroundColor: mainColor,
+              }}
+            >
+              {icon}
+            </span>
+
+            <span className="text-[17px] font-extrabold text-[#1D2939]">{title}</span>
+          </div>
+
+          <div className="p-7">
+            <div className="mb-6">
+              <div className="mb-2 flex items-center justify-between">
+                <Label required={!auto}>{routeLabel}</Label>
+
+                {auto && (
+                  <span className="rounded-md bg-[#EAF2FF] px-2 py-1 text-[10px] font-extrabold text-[#1677FF]">
+                    TỰ ĐỘNG
+                  </span>
+                )}
+              </div>
+
+              {auto ? (
+                <Input
+                  value={routeName}
+                  readOnly
+                  placeholder="Tự động theo chiều đi"
+                  className="h-11 rounded-xl border-none bg-[#EAF6FF] text-[#475467]"
+                />
+              ) : (
+                <Select
+                  value={routeValue}
+                  placeholder="Chọn tuyến đường"
+                  className="h-11 w-full"
+                  loading={routeLoading}
+                  options={routeOptions}
+                  onChange={(value: number) => {
+                    onRouteChange?.(value);
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="mb-6">
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Điểm dừng trên tuyến</Label>
+
+                {auto && (
+                  <span className="rounded-md bg-[#EAF2FF] px-2 py-1 text-[10px] font-extrabold text-[#1677FF]">
+                    TỰ ĐỘNG
+                  </span>
+                )}
+              </div>
+
+              <div
+                className="rounded-xl px-4 py-4"
+                style={{
+                  backgroundColor: stationBg,
+                }}
+              >
+                {stations.length === 0 ? (
+                  <div className="text-sm font-medium text-[#98A2B3]">Chưa có điểm dừng</div>
+                ) : (
+                  <div className="space-y-3">
+                    {stations.map((station, index) => {
+                      const isFirst = index === 0;
+                      const isLast = index === stations.length - 1;
+
+                      let dotColor = "#1677FF";
+
+                      if (isGo && isLast) dotColor = "#D92D20";
+                      if (!isGo && isFirst) dotColor = "#D92D20";
+                      if (!isGo && isLast) dotColor = "#1677FF";
+
+                      return (
+                        <div key={`${station}-${index}`} className="flex items-center gap-3">
+                          <span
+                            className="flex h-4 w-4 items-center justify-center rounded-full border-2 bg-white"
+                            style={{
+                              borderColor: dotColor,
+                              color: dotColor,
+                            }}
+                          >
+                            <span
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{
+                                backgroundColor: dotColor,
+                              }}
+                            />
+                          </span>
+
+                          <span className="text-sm font-medium text-[#344054]">{station}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label required>{timeLabel}</Label>
+              <DatePicker
+                value={timeValue}
+                onChange={onTimeChange}
+                showTime
+                format="DD/MM/YYYY, HH:mm"
+                placeholder="dd/mm/yyyy, --:--"
+                className="h-11 w-full rounded-xl border-none bg-[#F2F4F7]"
+              />
+            </div>
           </div>
         </div>
-
-        <Space>
-          <Button
-            className="h-11 rounded-xl px-6 font-semibold"
-            onClick={() => router.push("/admin/managePlan")}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="primary"
-            loading={submitting}
-            onClick={handleSubmit}
-            className="h-11 rounded-xl bg-blue-600 px-6 font-bold shadow"
-          >
-            Lưu lịch trình
-          </Button>
-        </Space>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <div className="space-y-6">
-          <Card className="rounded-3xl border-0 shadow-sm">
-            <div className="mb-6 flex items-center gap-3">
-              <InfoCircleOutlined className="text-xl text-blue-600" />
-              <h2 className="text-3xl font-extrabold text-slate-800">Thông tin cơ bản</h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Mã lịch trình *
-                </label>
-                <Input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="h-12 rounded-xl"
-                  placeholder="LT-2026-001"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Trạng thái *
-                </label>
-                <Select
-                  value={status}
-                  onChange={setStatus}
-                  className="w-full"
-                  size="large"
-                  options={[
-                    { value: "ACTIVE", label: "Chuẩn bị hoạt động" },
-                    { value: "SCHEDULED", label: "Đã lên lịch" },
-                    { value: "COMPLETE", label: "Hoàn thành" },
-                  ]}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Xe *
-                </label>
-                <Select
-                  value={carId}
-                  onChange={setCarId}
-                  className="w-full"
-                  size="large"
-                  placeholder="Chọn xe"
-                  loading={carsLoading}
-                  options={carOptions}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Tài khoản lái xe *
-                </label>
-                <Select
-                  value={accountId}
-                  onChange={setAccountId}
-                  className="w-full"
-                  size="large"
-                  placeholder="Chọn tài xế"
-                  loading={driversLoading}
-                  options={driverOptions}
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="rounded-3xl border-0 shadow-sm">
-            <div className="mb-6 flex items-center gap-3">
-              <ClockCircleOutlined className="text-xl text-blue-600" />
-              <h2 className="text-3xl font-extrabold text-slate-800">Thời gian</h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Ngày &amp; giờ khởi hành *
-                </label>
-                <DatePicker
-                  showTime
-                  value={startTime}
-                  onChange={setStartTime}
-                  className="h-12 w-full rounded-xl"
-                  format="DD/MM/YYYY HH:mm"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Ngày &amp; giờ kết thúc *
-                </label>
-                <DatePicker
-                  showTime
-                  value={endTime}
-                  onChange={setEndTime}
-                  className="h-12 w-full rounded-xl"
-                  format="DD/MM/YYYY HH:mm"
-                />
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-2xl bg-blue-50 p-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xl font-bold text-slate-700">Tổng thời gian di chuyển:</span>
-                <span className="text-3xl font-extrabold text-blue-700">{durationText}</span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div>
-          <Card className="rounded-3xl border-0 shadow-sm">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <EnvironmentOutlined className="text-xl text-blue-600" />
-                <h2 className="text-3xl font-extrabold leading-tight text-slate-800">
-                  Hành trình &amp; Trạm dừng
-                </h2>
-              </div>
-
-              <Button
-                type="link"
-                icon={<PlusCircleOutlined />}
-                onClick={handleAddStation}
-                className="font-bold"
-              >
-                Thêm trạm
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {stations.map((station, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm"
-                >
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-                      Trạm {index + 1}
-                    </span>
-
-                    {stations.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStation(index)}
-                        className="text-sm font-semibold text-red-500"
-                      >
-                        Xóa
-                      </button>
-                    )}
-                  </div>
-
-                  <Select
-                    value={station.stationId}
-                    onChange={(value) => handleStationChange(index, value)}
-                    placeholder={`Chọn trạm ${index + 1}`}
-                    className="w-full"
-                    size="large"
-                    loading={stationsLoading}
-                    options={stationOptions}
-                  />
-                </div>
-              ))}
-
-              <div className="mt-6 overflow-hidden rounded-2xl">
-                <div className="flex h-52 items-end bg-[linear-gradient(180deg,#E8EEF8_0%,#DCE7F5_100%)] p-5 text-slate-500">
-                  <span className="text-sm font-semibold">Xem bản đồ chi tiết</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      <div className="mt-10 flex items-center justify-between border-t border-slate-200 pt-6">
-        <span className="text-sm text-slate-400">* Các trường có dấu sao là bắt buộc</span>
-
-        <Space>
-          <Button
-            className="h-11 rounded-xl px-6 font-semibold"
-            onClick={() => router.push("/admin/managePlan")}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="primary"
-            loading={submitting}
-            onClick={handleSubmit}
-            className="h-11 rounded-xl bg-blue-600 px-8 font-bold shadow"
-          >
-            Lưu lịch trình
-          </Button>
-        </Space>
-      </div>
-    </div>
+    </Card>
   );
 }
