@@ -319,7 +319,7 @@ export default function CreatePlanPage() {
         />
       </section>
 
-      {/* Box trống phía dưới giống Figma */}
+      {}
       <div className="mt-28 h-[160px] rounded-2xl bg-white shadow-[0_16px_45px_rgba(16,24,40,0.05)]" />
     </div>
   );
@@ -413,12 +413,6 @@ function TripCard({
             <div className="mb-6">
               <div className="mb-2 flex items-center justify-between">
                 <Label required={!auto}>{routeLabel}</Label>
-
-                {auto && (
-                  <span className="rounded-md bg-[#EAF2FF] px-2 py-1 text-[10px] font-extrabold text-[#1677FF]">
-                    TỰ ĐỘNG
-                  </span>
-                )}
               </div>
 
               {auto ? (
@@ -445,12 +439,6 @@ function TripCard({
             <div className="mb-6">
               <div className="mb-2 flex items-center justify-between">
                 <Label>Điểm dừng trên tuyến</Label>
-
-                {auto && (
-                  <span className="rounded-md bg-[#EAF2FF] px-2 py-1 text-[10px] font-extrabold text-[#1677FF]">
-                    TỰ ĐỘNG
-                  </span>
-                )}
               </div>
 
               <div
@@ -464,14 +452,7 @@ function TripCard({
                 ) : (
                   <div className="space-y-3">
                     {stations.map((station, index) => {
-                      const isFirst = index === 0;
-                      const isLast = index === stations.length - 1;
-
-                      let dotColor = "#1677FF";
-
-                      if (isGo && isLast) dotColor = "#D92D20";
-                      if (!isGo && isFirst) dotColor = "#D92D20";
-                      if (!isGo && isLast) dotColor = "#1677FF";
+                      const dotColor = "#1677FF";
 
                       return (
                         <div key={`${station}-${index}`} className="flex items-center gap-3">
