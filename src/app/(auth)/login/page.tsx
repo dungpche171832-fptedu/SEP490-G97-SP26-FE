@@ -78,12 +78,14 @@ function Input({
   type = "text",
   value,
   onChange,
+  autoComplete, // Thêm prop này để trình duyệt hỗ trợ tốt hơn
 }: {
   label: string;
   placeholder: string;
   type?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoComplete?: string;
 }) {
   return (
     <div className="mb-4">
@@ -93,6 +95,7 @@ function Input({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        autoComplete={autoComplete}
         className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2.5 text-[14px] placeholder:text-[#94A3B8] text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-[#0F172A] focus:border-[#0F172A] transition-all duration-200"
       />
     </div>
@@ -107,7 +110,8 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault(); // Ngăn trình duyệt reload trang
     setError("");
 
     if (!email.trim()) {
@@ -153,7 +157,6 @@ function LoginForm() {
       } else {
         setError("Đăng nhập thất bại");
       }
-
       setPassword("");
     } finally {
       setLoading(false);
@@ -161,13 +164,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="space-y-2">
+    <form onSubmit={handleLogin} className="space-y-2">
       <Input
         label="Email"
         placeholder="Nhập email của bạn"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        autoComplete="email"
       />
 
       <Input
@@ -176,6 +180,7 @@ function LoginForm() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        autoComplete="current-password"
       />
 
       {error && (
@@ -185,7 +190,7 @@ function LoginForm() {
       )}
 
       <button
-        onClick={handleLogin}
+        type="submit"
         disabled={loading}
         className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-60 shadow-sm"
       >
@@ -198,7 +203,7 @@ function LoginForm() {
       >
         Quên mật khẩu?
       </Link>
-    </div>
+    </form>
   );
 }
 
@@ -208,7 +213,8 @@ function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       const res = await register({ fullName, email, phone, password });
       alert(res.message || "Đăng ký thành công");
@@ -222,12 +228,13 @@ function RegisterForm() {
   };
 
   return (
-    <div className="space-y-2">
+    <form onSubmit={handleRegister} className="space-y-2">
       <Input
         label="Họ và tên"
         placeholder="Nhập họ và tên"
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
+        autoComplete="name"
       />
 
       <Input
@@ -236,6 +243,7 @@ function RegisterForm() {
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        autoComplete="email"
       />
 
       <Input
@@ -243,6 +251,7 @@ function RegisterForm() {
         placeholder="Nhập số điện thoại"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+        autoComplete="tel"
       />
 
       <Input
@@ -251,14 +260,15 @@ function RegisterForm() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        autoComplete="new-password"
       />
 
       <button
-        onClick={handleRegister}
+        type="submit"
         className="w-full mt-4 bg-[#0F172A] hover:bg-[#1E293B] !text-white font-bold text-[14px] py-3 rounded-lg transition-all duration-200 active:scale-[0.98] shadow-sm"
       >
         Đăng ký
       </button>
-    </div>
+    </form>
   );
 }

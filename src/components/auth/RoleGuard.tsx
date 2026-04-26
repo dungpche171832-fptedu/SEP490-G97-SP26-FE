@@ -26,12 +26,12 @@ export default function RoleGuard({ children, allowedRoles, allowGuest = false }
   useEffect(() => {
     if (isAuthorized) return;
 
-    if (isGuest) {
-      router.replace("/login");
-      return;
-    }
+    // if (isGuest) {
+    //   router.replace("/login");
+    //   return;
+    // }
 
-    if (role === "customer") {
+    if (role === "customer" || isGuest) {
       router.replace("/home");
       return;
     }
