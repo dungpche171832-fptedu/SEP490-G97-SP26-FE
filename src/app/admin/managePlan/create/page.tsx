@@ -121,6 +121,13 @@ export default function CreatePlanPage() {
     }
   };
 
+  const mainRoutes = routes.filter((route) => {
+    const code = route.code.toUpperCase();
+    const name = route.name.toLowerCase();
+
+    return !code.endsWith("_R") && !name.includes("reverse");
+  });
+
   const departureStationNames =
     selectedDepartureRoute?.stations
       .slice()
@@ -295,7 +302,7 @@ export default function CreatePlanPage() {
           stations={departureStationNames}
           timeLabel="Thời gian xuất phát"
           routeLoading={routeLoading}
-          routeOptions={routes.map((route) => ({
+          routeOptions={mainRoutes.map((route) => ({
             label: route.name,
             value: route.id,
           }))}
