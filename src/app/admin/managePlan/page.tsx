@@ -6,16 +6,46 @@ import { Table, Input, Button, Tag, Pagination, Space, ConfigProvider, message }
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { planService } from "@/services/planService";
-import type { Plan, PlanResponse } from "@/model/plan";
+import type { Plan, PlanResponse, PlanStationResponse, PlanStatus } from "@/model/plan";
 
 interface PlanTableItem {
   id: number;
   key: string;
   code: string;
-  carPlate: string;
   driver: string;
+  driverPhone: string;
+  routeName: string;
+  startStation: string;
+  endStation: string;
   startTime: string;
-  status: string;
+  status: PlanStatus;
+}
+
+function formatDateTime(value: string): string {
+  if (!value) return "-";
+
+  const normalizedValue = value.replace("T", " ");
+
+  return normalizedValue.slice(0, 16);
+}
+
+function getSortedStations(stations: PlanStationResponse[] = []): PlanStationResponse[] {
+  return [...stations].sort((a, b) => a.order - b.order);
+}
+
+function getStatusLabel(status: PlanStatus): string {
+  switch (status) {
+    case "ACTIVE":
+      return "Hoạt động";
+    case "INACTIVE":
+      return "Không hoạt động";
+    case "RUNNING":
+      return "Đang chạy";
+    case "COMPLETE":
+      return "Hoàn thành";
+    default:
+      return status;
+  }
 }
 
 export default function PlanManagementPage() {
@@ -24,7 +54,9 @@ export default function PlanManagementPage() {
   const [plans, setPlans] = useState<PlanTableItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const pageSize = 10;
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -32,25 +64,33 @@ export default function PlanManagementPage() {
 
       const response: PlanResponse = await planService.getListPlans();
 
-      if (response?.plans) {
-        const mappedData: PlanTableItem[] = response.plans.map((item: Plan) => ({
+      const mappedData: PlanTableItem[] = (response.plans || []).map((item: Plan) => {
+        const sortedStations = getSortedStations(item.stations);
+        const startStation = sortedStations[0]?.stationName || "-";
+        const endStation = sortedStations[sortedStations.length - 1]?.stationName || "-";
+
+        return {
           id: item.id,
           key: String(item.id),
           code: item.code,
-          carPlate: item.carLicensePlate,
           driver: item.driverName,
-          startTime: item.startTime,
+          driverPhone: item.driverPhone || "-",
+          routeName: item.routeName || "-",
+          startStation,
+          endStation,
+          startTime: formatDateTime(item.startTime),
           status: item.status,
-        }));
+        };
+      });
 
-        setPlans(mappedData);
-        setTotalCount(response.totalCount || mappedData.length);
-      }
+      setPlans(mappedData);
     } catch (error: unknown) {
       let errorMsg = "Không thể tải danh sách lịch trình";
+
       if (error instanceof Error) {
         errorMsg = error.message;
       }
+
       message.error(errorMsg);
     } finally {
       setLoading(false);
@@ -63,15 +103,29 @@ export default function PlanManagementPage() {
 
   const filteredData = useMemo(() => {
     const keyword = searchText.toLowerCase().trim();
+
     if (!keyword) return plans;
 
     return plans.filter(
       (item) =>
         item.code.toLowerCase().includes(keyword) ||
-        item.carPlate.toLowerCase().includes(keyword) ||
-        item.driver.toLowerCase().includes(keyword),
+        item.driver.toLowerCase().includes(keyword) ||
+        item.driverPhone.toLowerCase().includes(keyword) ||
+        item.routeName.toLowerCase().includes(keyword) ||
+        item.startStation.toLowerCase().includes(keyword) ||
+        item.endStation.toLowerCase().includes(keyword),
     );
   }, [plans, searchText]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+
+    return filteredData.slice(startIndex, startIndex + pageSize);
+  }, [filteredData, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText]);
 
   const columns: ColumnsType<PlanTableItem> = [
     {
@@ -82,16 +136,28 @@ export default function PlanManagementPage() {
       render: (text: string) => <span className="font-bold text-slate-700">{text}</span>,
     },
     {
-      title: "BIỂN SỐ XE",
-      dataIndex: "carPlate",
-      key: "carPlate",
-      render: (text: string) => <span className="font-medium text-slate-600">{text}</span>,
+      title: "TUYẾN",
+      dataIndex: "routeName",
+      key: "routeName",
+      render: (text: string, record) => (
+        <div>
+          <div className="font-semibold text-slate-700">{text}</div>
+          <div className="text-xs text-slate-400">
+            {record.startStation} → {record.endStation}
+          </div>
+        </div>
+      ),
     },
     {
       title: "TÀI XẾ",
       dataIndex: "driver",
       key: "driver",
-      render: (text: string) => <span className="text-slate-600">{text}</span>,
+      render: (text: string, record) => (
+        <div>
+          <div className="font-medium text-slate-700">{text}</div>
+          <div className="text-xs text-slate-400">{record.driverPhone}</div>
+        </div>
+      ),
     },
     {
       title: "THỜI GIAN ĐI",
@@ -105,25 +171,28 @@ export default function PlanManagementPage() {
       dataIndex: "status",
       key: "status",
       align: "center",
-      render: (status: string) => {
-        const normalizedStatus = status?.toUpperCase();
-
-        const isActive = normalizedStatus === "ACTIVE" || status === "Hoạt động";
-        const isComplete = normalizedStatus === "COMPLETE" || status === "Hoàn thành";
-        const isScheduled = normalizedStatus === "SCHEDULED" || status === "Đã lên lịch";
-
+      render: (status: PlanStatus) => {
         let bgColor = "#F1F5F9";
         let textColor = "#64748B";
 
-        if (isActive) {
+        if (status === "ACTIVE") {
           bgColor = "#E6FFFA";
           textColor = "#059669";
-        } else if (isComplete) {
-          bgColor = "#F2F4F7";
-          textColor = "#344054";
-        } else if (isScheduled) {
+        }
+
+        if (status === "RUNNING") {
           bgColor = "#EFF8FF";
           textColor = "#1570EF";
+        }
+
+        if (status === "COMPLETE") {
+          bgColor = "#F2F4F7";
+          textColor = "#344054";
+        }
+
+        if (status === "INACTIVE") {
+          bgColor = "#FEF3F2";
+          textColor = "#D92D20";
         }
 
         return (
@@ -132,7 +201,7 @@ export default function PlanManagementPage() {
             color={bgColor}
             style={{ color: textColor }}
           >
-            {status}
+            {getStatusLabel(status)}
           </Tag>
         );
       },
@@ -150,6 +219,7 @@ export default function PlanManagementPage() {
               <EditOutlined className="text-lg text-slate-400 transition-colors hover:text-blue-500" />
             }
           />
+
           <Button
             type="text"
             icon={
@@ -169,6 +239,7 @@ export default function PlanManagementPage() {
             <h1 className="text-2xl font-extrabold uppercase tracking-tight text-slate-800">
               QUẢN LÝ LỊCH TRÌNH
             </h1>
+
             <p className="mt-1 text-sm font-medium text-slate-500">
               Hệ thống quản lý vận tải Việt Trung
             </p>
@@ -186,7 +257,7 @@ export default function PlanManagementPage() {
 
         <div className="mb-6 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <Input
-            placeholder="Tìm kiếm mã, biển số, tài xế..."
+            placeholder="Tìm kiếm mã, tài xế, tuyến..."
             prefix={<SearchOutlined className="mr-2 text-slate-400" />}
             className="h-11 max-w-md rounded-lg border-slate-200 bg-slate-50/50"
             value={searchText}
@@ -216,7 +287,7 @@ export default function PlanManagementPage() {
           >
             <Table
               columns={columns}
-              dataSource={filteredData}
+              dataSource={paginatedData}
               pagination={false}
               loading={loading}
               rowKey="key"
@@ -227,15 +298,16 @@ export default function PlanManagementPage() {
 
         <div className="mt-6 flex flex-col items-center justify-between gap-4 pb-10 sm:flex-row">
           <span className="text-sm font-medium text-slate-500">
-            Hiển thị {filteredData.length} trên {totalCount} lịch trình
+            Hiển thị {paginatedData.length} trên {filteredData.length} lịch trình
           </span>
 
           <Pagination
-            defaultCurrent={1}
-            total={totalCount}
-            pageSize={10}
+            current={currentPage}
+            total={filteredData.length}
+            pageSize={pageSize}
             showSizeChanger={false}
             className="custom-pagination"
+            onChange={(page: number) => setCurrentPage(page)}
           />
         </div>
       </div>

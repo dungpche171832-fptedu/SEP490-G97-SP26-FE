@@ -1,34 +1,9 @@
-export interface Station {
-  stationOrder: number;
-  stationName: string;
-  stations: {
-    stationOrder: number;
-    stationName: string;
-  }[];
-}
+export type PlanStatus = "COMPLETE" | "RUNNING" | "ACTIVE" | "INACTIVE";
 
-export interface Plan {
-  id: number;
-  code: string;
-  carId: number;
-  carLicensePlate: string;
-  accountId: number;
-  driverName: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  stations: Station[];
-}
-
-export interface PlanResponse {
-  plans: Plan[];
-  message: string;
-  totalCount: number;
-}
 export interface PlanStationResponse {
   stationId: number;
   stationName: string;
-  stationOrder: number;
+  order: number;
 }
 
 export interface PlanSeatResponse {
@@ -37,25 +12,64 @@ export interface PlanSeatResponse {
   status: string;
 }
 
+export interface Plan {
+  id: number;
+  code: string;
+
+  carId: number;
+  carLicensePlate: string;
+
+  accountId: number;
+  driverName: string;
+  driverPhone?: string;
+
+  branchId: number;
+  branchName: string;
+
+  routeId: number;
+  routeName: string;
+
+  startTime: string;
+  status: PlanStatus;
+
+  stations: PlanStationResponse[];
+}
+
+export interface PlanResponse {
+  plans: Plan[];
+  totalCount: number;
+  message: string;
+}
+
 export interface PlanDetailResponse {
   id: number;
   code: string;
+
   routeId?: number;
+  routeName?: string;
+
   carId: number;
   carLicensePlate: string;
+
   accountId: number;
   driverName: string;
+  driverPhone?: string;
+
   branchId?: number;
+  branchName?: string;
+
   startTime: string;
   returnStartTime?: string;
   endTime?: string;
-  status: string;
+
+  status: PlanStatus;
+
   stations?: PlanStationResponse[];
   seats?: PlanSeatResponse[];
 }
 
 export interface UpdatePlanStatusPayload {
-  status: string;
+  status: PlanStatus;
 }
 
 export interface CreatePlanPayload {
@@ -66,5 +80,5 @@ export interface CreatePlanPayload {
   branchId: number;
   startTime: string;
   returnStartTime: string;
-  status: string;
+  status: PlanStatus;
 }

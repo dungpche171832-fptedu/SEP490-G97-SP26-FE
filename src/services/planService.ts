@@ -3,86 +3,139 @@ import type {
   PlanDetailResponse,
   UpdatePlanStatusPayload,
   CreatePlanPayload,
+  PlanStatus,
 } from "../model/plan";
+
+interface PlanDetailForTicket extends PlanDetailResponse {
+  startStation?: unknown;
+  endStations?: unknown[];
+  allStations?: unknown[];
+  carInfo?: unknown;
+}
+
+function getAuthHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+function unwrapApiResponse<T>(data: unknown): T {
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+
+    if (record.result !== undefined) {
+      return record.result as T;
+    }
+
+    if (record.data !== undefined) {
+      return record.data as T;
+    }
+  }
+
+  return data as T;
+}
+
+async function getErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
+  const errorText = await response.text();
+
+  if (errorText) {
+    return errorText;
+  }
+
+  return `${fallbackMessage}: ${response.status}`;
+}
 
 export const planService = {
   getListPlans: async (): Promise<PlanResponse> => {
-    const token = localStorage.getItem("token");
+    const headers = getAuthHeaders();
 
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
+    const statuses: PlanStatus[] = ["ACTIVE", "RUNNING", "COMPLETE", "INACTIVE"];
+
+    const fetchByStatus = async (status: PlanStatus): Promise<PlanResponse> => {
+      const response = await fetch(`http://localhost:8080/api/plans?status=${status}`, {
+        method: "GET",
+        headers,
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        console.error(`GET /api/plans?status=${status} failed:`, response.status, errorText);
+
+        if (
+          response.status === 404 ||
+          errorText.includes("PLAN_NOT_FOUND") ||
+          errorText.toLowerCase().includes("not found")
+        ) {
+          return {
+            plans: [],
+            totalCount: 0,
+            message: "Không có lịch trình",
+          };
+        }
+
+        throw new Error(errorText || `Lỗi API: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      return unwrapApiResponse<PlanResponse>(data);
     };
 
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const responses = await Promise.all(statuses.map((status) => fetchByStatus(status)));
 
-    const response = await fetch("http://localhost:8080/api/plans", {
-      method: "GET",
-      headers,
-    });
+    const plans = responses.flatMap((response) => response.plans || []);
 
-    if (response.status === 401 || response.status === 403) {
-      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
-    }
+    const uniquePlans = Array.from(new Map(plans.map((plan) => [plan.id, plan])).values());
 
-    if (!response.ok) throw new Error("Lỗi kết nối API");
-
-    return await response.json();
+    return {
+      plans: uniquePlans,
+      totalCount: uniquePlans.length,
+      message: "Danh sách lịch trình theo trạng thái",
+    };
   },
 
   getPlanDetail: async (id: string | number): Promise<PlanDetailResponse> => {
-    const token = localStorage.getItem("token");
-
     const response = await fetch(`http://localhost:8080/api/plans/${id}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
     });
 
     if (response.status === 401 || response.status === 403) {
       throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
     }
 
-    if (!response.ok) throw new Error("Không lấy được chi tiết lịch trình");
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response, "Không lấy được chi tiết lịch trình");
+      console.error(`GET /api/plans/${id} failed:`, response.status, errorMessage);
 
-    return await response.json();
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    return unwrapApiResponse<PlanDetailResponse>(data);
   },
 
   updatePlanStatus: async (
     id: string | number,
     payload: UpdatePlanStatusPayload,
   ): Promise<PlanDetailResponse> => {
-    const token = localStorage.getItem("token");
-
     const response = await fetch(`http://localhost:8080/api/plans/${id}/status`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
-    }
-
-    if (!response.ok) throw new Error("Không cập nhật được trạng thái lịch trình");
-
-    return await response.json();
-  },
-  createPlan: async (payload: CreatePlanPayload): Promise<PlanDetailResponse> => {
-    const token = localStorage.getItem("token");
-
-    const response = await fetch("http://localhost:8080/api/plans", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
 
@@ -91,53 +144,72 @@ export const planService = {
     }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Không thêm được lịch trình");
+      const errorMessage = await getErrorMessage(
+        response,
+        "Không cập nhật được trạng thái lịch trình",
+      );
+      console.error(`PATCH /api/plans/${id}/status failed:`, response.status, errorMessage);
+
+      throw new Error(errorMessage);
     }
-
-    return await response.json();
-  },
-
-  getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailResponse> => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-    const response = await fetch(`http://localhost:8080/api/plans/${id}`, {
-      method: "GET",
-
-      headers: {
-        "Content-Type": "application/json",
-
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) throw new Error("Lỗi lấy thông tin chi tiết");
 
     const data = await response.json();
 
-    const planDetail = data.result || data.data || data;
+    return unwrapApiResponse<PlanDetailResponse>(data);
+  },
+
+  createPlan: async (payload: CreatePlanPayload): Promise<PlanDetailResponse> => {
+    const response = await fetch("http://localhost:8080/api/plans", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
+    }
+
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response, "Không thêm được lịch trình");
+      console.error("POST /api/plans failed:", response.status, errorMessage);
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    return unwrapApiResponse<PlanDetailResponse>(data);
+  },
+
+  getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailResponse> => {
+    const response = await fetch(`http://localhost:8080/api/plans/${id}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response, "Lỗi lấy thông tin chi tiết");
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    const planDetail = unwrapApiResponse<PlanDetailForTicket>(data);
 
     try {
       const stRes = await fetch(`http://localhost:8080/api/plans/${id}/stations`, {
         method: "GET",
-
-        headers: {
-          "Content-Type": "application/json",
-
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (stRes.ok) {
         const stData = await stRes.json();
 
-        const stationsList = stData.result || stData.data || stData;
+        const stationsList = unwrapApiResponse<unknown[]>(stData);
 
         if (Array.isArray(stationsList) && stationsList.length > 0) {
           planDetail.startStation = stationsList[0];
-
           planDetail.endStations = stationsList.slice(1);
-
           planDetail.allStations = stationsList;
         }
       }
@@ -146,18 +218,16 @@ export const planService = {
     }
 
     try {
-      if (planDetail && planDetail.carId) {
+      if (planDetail.carId) {
         const carRes = await fetch(`http://localhost:8080/api/cars/cars/${planDetail.carId}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: getAuthHeaders(),
         });
 
         if (carRes.ok) {
           const carData = await carRes.json();
-          planDetail.carInfo = carData.result || carData.data || carData;
+
+          planDetail.carInfo = unwrapApiResponse<unknown>(carData);
         }
       }
     } catch (err) {
