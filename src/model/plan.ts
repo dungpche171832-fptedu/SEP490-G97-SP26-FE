@@ -82,3 +82,10 @@ export interface CreatePlanPayload {
   returnStartTime: string;
   status: PlanStatus;
 }
+export interface ChangeDriverPayload {
+  newDriverId: number;
+}
+
+export interface ChangeCarPayload {
+  newCarId: number;
+}

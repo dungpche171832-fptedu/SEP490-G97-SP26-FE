@@ -4,6 +4,8 @@ import type {
   UpdatePlanStatusPayload,
   CreatePlanPayload,
   PlanStatus,
+  ChangeDriverPayload,
+  ChangeCarPayload,
 } from "../model/plan";
 
 interface PlanDetailForTicket extends PlanDetailResponse {
@@ -108,9 +110,10 @@ export const planService = {
   },
 
   getPlanDetail: async (id: string | number): Promise<PlanDetailResponse> => {
-    const response = await fetch(`http://localhost:8080/api/plans/${id}`, {
+    const response = await fetch(`http://localhost:8080/api/plans/${id}?t=${Date.now()}`, {
       method: "GET",
       headers: getAuthHeaders(),
+      cache: "no-store",
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -179,6 +182,52 @@ export const planService = {
     const data = await response.json();
 
     return unwrapApiResponse<PlanDetailResponse>(data);
+  },
+
+  changeDriver: async (planId: string | number, payload: ChangeDriverPayload): Promise<string> => {
+    const response = await fetch(`http://localhost:8080/api/plans/${planId}/change-driver`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
+    }
+
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response, "Không đổi được tài xế");
+      console.error(
+        `PUT /api/plans/${planId}/change-driver failed:`,
+        response.status,
+        errorMessage,
+      );
+
+      throw new Error(errorMessage);
+    }
+
+    return await response.text();
+  },
+
+  changeCar: async (planId: string | number, payload: ChangeCarPayload): Promise<string> => {
+    const response = await fetch(`http://localhost:8080/api/plans/${planId}/change-car`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
+    }
+
+    if (!response.ok) {
+      const errorMessage = await getErrorMessage(response, "Không đổi được xe");
+      console.error(`PUT /api/plans/${planId}/change-car failed:`, response.status, errorMessage);
+
+      throw new Error(errorMessage);
+    }
+
+    return await response.text();
   },
 
   getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailResponse> => {
