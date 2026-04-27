@@ -181,9 +181,9 @@ export const getMyTickets = async (): Promise<TicketInfo[]> => {
 };
 export const updateTicketStatus = async (ticketId: number, status: string) => {
   try {
-    const response = await ticketClient.put(`/ticket/${ticketId}/status`, status, {
-      headers: {
-        "Content-Type": "text/plain",
+    const response = await ticketClient.put(`/ticket/${ticketId}/status`, null, {
+      params: {
+        status: status,
       },
     });
     return response.data;

@@ -363,11 +363,17 @@ function AddTicketContent() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
-                  <span className="text-[10px] font-bold text-orange-500 uppercase">Đang chọn</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Đang chọn</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-sm"></div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">
+                    Người khác đang chọn
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 bg-slate-300 rounded-sm"></div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Đã đặt</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Đã đặt</span>
                 </div>
               </div>
             </div>
@@ -402,27 +408,30 @@ function AddTicketContent() {
                 <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-8 bg-slate-100/50 rounded-full -z-10"></div>
                 {seats.map((seat: Seat, index: number) => {
                   const isBooked = seat.status === "BOOKED";
+                  const isChoosing = seat.status === "HOLD";
                   const isSelected = selectedSeats.includes(seat.id || seat.seatId);
                   const isLastExtra = seats.length % 2 !== 0 && index === seats.length - 1;
 
                   return (
                     <button
                       key={seat.id || seat.seatId}
-                      disabled={isBooked}
+                      disabled={isBooked || isChoosing}
                       onClick={() => toggleSeat(seat.id || seat.seatId)}
                       className={`relative transition-all duration-300 
                                             ${isLastExtra ? "w-full flex justify-center mt-4" : "w-[40%]"}`}
                     >
                       <div
-                        className={`
-                                                    relative aspect-[1/1.1] w-full max-w-[80px] mx-auto rounded-t-xl rounded-b-md flex flex-col items-center justify-center border-b-[6px] transition-all
-                                                    ${
-                                                      isBooked
-                                                        ? "bg-slate-200 border-slate-300 opacity-60"
-                                                        : isSelected
-                                                          ? "bg-orange-500 border-orange-700 -translate-y-1 shadow-lg shadow-orange-200"
-                                                          : "bg-white border-slate-200 shadow-md hover:border-blue-400 hover:bg-blue-50"
-                                                    }
+                        className={`relative aspect-[1/1.1] w-full max-w-[80px] mx-auto rounded-t-xl rounded-b-md flex flex-col items-center justify-center border-b-[6px] transition-all 
+                          ${
+                            isBooked
+                              ? "bg-slate-200 border-slate-300 opacity-60"
+                              : isChoosing
+                                ? "bg-yellow-100 border-yellow-400 border-2 opacity-90 cursor-not-allowed"
+                                : isSelected
+                                  ? "bg-orange-500 border-orange-700 -translate-y-1 shadow-lg shadow-orange-200"
+                                  : "bg-white border-slate-200 shadow-md hover:border-blue-400 hover:bg-blue-50"
+                          }
+                                                    
                                             `}
                       >
                         <div
