@@ -6,6 +6,7 @@ import type {
   PlanStatus,
   ChangeDriverPayload,
   ChangeCarPayload,
+  PlanSearchParams,
 } from "../model/plan";
 
 interface PlanDetailForTicket extends PlanDetailResponse {
@@ -107,6 +108,37 @@ export const planService = {
       totalCount: uniquePlans.length,
       message: "Danh sách lịch trình theo trạng thái",
     };
+  },
+
+  searchPlans: async (params: PlanSearchParams): Promise<PlanResponse> => {
+    const headers = getAuthHeaders();
+
+    const url = new URL("http://localhost:8080/api/plans");
+
+    if (params.departureStationId)
+      url.searchParams.append("departureStationId", params.departureStationId.toString());
+
+    if (params.destinationStationId)
+      url.searchParams.append("destinationStationId", params.destinationStationId.toString());
+
+    if (params.startTime) url.searchParams.append("startTime", params.startTime);
+
+    url.searchParams.append("status", params.status || "ACTIVE");
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      // Nếu không tìm thấy, trả về mảng rỗng thay vì báo lỗi đỏ
+      if (response.status === 404) return { plans: [], totalCount: 0, message: "Không tìm thấy" };
+      throw new Error(errorText || "Lỗi khi tìm kiếm lịch trình");
+    }
+
+    const data = await response.json();
+    return unwrapApiResponse<PlanResponse>(data);
   },
 
   getPlanDetail: async (id: string | number): Promise<PlanDetailResponse> => {
@@ -284,5 +316,43 @@ export const planService = {
     }
 
     return planDetail;
+  },
+  getPlansForExchange: async (params: {
+    totalSeat: number;
+    departureStationId: number;
+    destinationStationId: number;
+    startTime: string;
+    branchId: number;
+    carType: string;
+  }) => {
+    const url = new URL("http://localhost:8080/api/plans/plans/change-plans");
+
+    url.searchParams.append("totalSeat", String(params.totalSeat));
+
+    url.searchParams.append("departureStationId", String(params.departureStationId));
+
+    url.searchParams.append("destinationStationId", String(params.destinationStationId));
+
+    url.searchParams.append("status", "ACTIVE");
+
+    url.searchParams.append("startTime", params.startTime);
+
+    url.searchParams.append("branchId", String(params.branchId));
+
+    url.searchParams.append("carType", params.carType);
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Không lấy được danh sách chuyến đổi");
+    }
+
+    const data = await response.json();
+
+    return unwrapApiResponse<PlanResponse>(data);
   },
 };
