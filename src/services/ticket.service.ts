@@ -28,56 +28,23 @@ export interface PriceResponse {
 export interface TicketInfo {
   id: number;
   bookingCode: string;
-
-  planId: number;
-  planCode?: string;
-
-  carId: number;
-  carLicensePlate?: string;
-  carType?: string;
-
-  branchId?: number;
-  branchName?: string;
-
-  accountId: number;
-  accountName?: string;
-
-  distanceKm: number;
   totalAmount: number;
-
-  startStationId?: number;
-  startStation?: string;
-
-  endStationId?: number;
-  endStation?: string;
-
   status: string;
+  distanceKm: number;
+  accountId: number;
+  planId: number;
+  carId: number;
   note?: string;
-
-  startTime?: string;
-
-  seatNumbers?: string[];
-  totalSeats?: number;
-
   bookingDate?: string;
-
   [key: string]: unknown;
 }
 
+// Interface cho phản hồi đặt vé thành công
 export interface BookTicketResponse {
   success: boolean;
   message?: string;
   result?: TicketInfo;
   data?: TicketInfo;
-}
-export interface ChangePlanRequest {
-  newPlanId: number;
-  newSeatIds: number[];
-}
-export interface ChangePlanResponse {
-  success?: boolean;
-  message?: string;
-  data?: unknown;
 }
 
 const ticketClient = axios.create({
@@ -195,10 +162,16 @@ export const bookTicket = async (payload: TicketAddRequest): Promise<BookTicketR
   }
 };
 
+/**
+ * 4. Lấy danh sách lịch sử đặt vé
+ * Đã thay thế Promise<any[]> bằng Promise<TicketInfo[]>
+ */
 export const getMyTickets = async (): Promise<TicketInfo[]> => {
   try {
     const response = await ticketClient.get(`/ticket`);
     const data = response.data;
+
+    // Xử lý các trường hợp bọc dữ liệu khác nhau của backend
     if (Array.isArray(data)) return data;
     return data?.tickets || data?.result || data?.data || [];
   } catch (error) {
@@ -216,32 +189,6 @@ export const updateTicketStatus = async (ticketId: number, status: string) => {
     return response.data;
   } catch (error) {
     console.error("Lỗi cập nhật status:", error);
-    throw error;
-  }
-};
-export const getTicketById = async (ticketId: string | number): Promise<TicketInfo | null> => {
-  try {
-    const response = await ticketClient.get(`/ticket/${ticketId}`);
-    const data = response.data;
-    return data?.result || data?.data || data || null;
-  } catch (error) {
-    console.error("Lỗi khi lấy chi tiết vé:", error);
-    return null;
-  }
-};
-export const changePlan = async (
-  ticketId: number | string,
-  payload: ChangePlanRequest,
-): Promise<ChangePlanResponse> => {
-  try {
-    const response = await ticketClient.put<ChangePlanResponse>(
-      `/ticket/${ticketId}/change-plan`,
-      payload,
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error("Lỗi khi đổi chuyến:", error);
     throw error;
   }
 };

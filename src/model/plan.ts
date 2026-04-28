@@ -18,7 +18,6 @@ export interface Plan {
 
   carId: number;
   carLicensePlate: string;
-  carType?: string;
 
   accountId: number;
   driverName: string;
@@ -89,10 +88,4 @@ export interface ChangeDriverPayload {
 
 export interface ChangeCarPayload {
   newCarId: number;
-}
-export interface PlanSearchParams {
-  departureStationId?: number;
-  destinationStationId?: number;
-  startTime?: string;
-  status?: string;
 }

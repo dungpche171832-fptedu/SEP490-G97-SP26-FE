@@ -14,11 +14,8 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { getMyTickets, updateTicketStatus, TicketInfo } from "@/services/ticket.service";
-import { useRouter } from "next/navigation";
 
 const TicketManagementPage = () => {
-  const router = useRouter();
-
   const [tickets, setTickets] = useState<TicketInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -214,10 +211,7 @@ const TicketManagementPage = () => {
               </div>
 
               <div className="w-[10%] flex justify-end items-center gap-2">
-                <button
-                  onClick={() => router.push(`/admin/manageTicket/${ticket.id}`)}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition"
-                >
+                <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition">
                   Chi tiết
                 </button>
                 <button className="p-2 border border-slate-200 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition">
