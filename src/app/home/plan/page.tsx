@@ -13,14 +13,16 @@ interface PlanExtended extends Plan {
 }
 
 export default function ListPlanPage() {
-  // Thay thế any bằng PlanExtended
   const [plans, setPlans] = useState<PlanExtended[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchInput, setSearchInput] = useState("");
   const [dateInput, setDateInput] = useState<string | null>(null);
-
   const [filterQuery, setFilterQuery] = useState({ text: "", date: null as string | null });
+
+  // State cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9;
 
   const router = useRouter();
 
@@ -28,7 +30,6 @@ export default function ListPlanPage() {
     planService
       .getListPlans()
       .then((data) => {
-        // Xử lý dữ liệu trả về và ép kiểu an toàn
         let plansData: PlanExtended[] = [];
         if (Array.isArray(data)) {
           plansData = data;
@@ -42,9 +43,12 @@ export default function ListPlanPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Logic Lọc: Thêm điều kiện status === "ACTIVE"
   const filteredPlans = useMemo(() => {
     return plans.filter((p) => {
-      // Loại bỏ hoàn toàn 'as any' bằng cách sử dụng Optional Chaining và Default Value
+      // Chỉ lấy các plan có trạng thái ACTIVE
+      const isActive = p.status === "ACTIVE";
+
       const startStation = p.startStationName ?? "";
       const endStation = p.endStationName ?? "";
 
@@ -55,15 +59,24 @@ export default function ListPlanPage() {
         ? dayjs(p.startTime).format("YYYY-MM-DD") === filterQuery.date
         : true;
 
-      return matchesSearch && matchesDate;
+      return isActive && matchesSearch && matchesDate;
     });
   }, [filterQuery, plans]);
+
+  // Logic Phân trang: Cắt mảng filteredPlans thành từng trang 9 phần tử
+  const paginatedPlans = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredPlans.slice(startIndex, startIndex + pageSize);
+  }, [filteredPlans, currentPage]);
+
+  const totalPages = Math.ceil(filteredPlans.length / pageSize);
 
   const handleSearch = () => {
     setFilterQuery({
       text: searchInput,
       date: dateInput,
     });
+    setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
   };
 
   const handleBooking = (id: number) => {
@@ -109,7 +122,6 @@ export default function ListPlanPage() {
                   placeholder="Chọn ngày"
                   className="w-full px-4 py-2.5 text-sm font-black"
                   style={{ width: "100%" }}
-                  // Fix lỗi value của DatePicker nếu cần thiết
                   value={dateInput ? dayjs(dateInput) : null}
                   onChange={(date) => {
                     setDateInput(date ? date.format("YYYY-MM-DD") : null);
@@ -137,7 +149,7 @@ export default function ListPlanPage() {
           <>
             <div className="mb-6 flex justify-between items-center">
               <p className="text-slate-500 text-sm">
-                Hiển thị <b>{filteredPlans.length}</b> lịch trình
+                Hiển thị <b>{paginatedPlans.length}</b> / <b>{filteredPlans.length}</b> lịch trình
               </p>
               {(filterQuery.text || filterQuery.date) && (
                 <button
@@ -145,6 +157,7 @@ export default function ListPlanPage() {
                     setSearchInput("");
                     setDateInput(null);
                     setFilterQuery({ text: "", date: null });
+                    setCurrentPage(1);
                   }}
                   className="text-blue-600 text-xs font-bold uppercase hover:underline"
                 >
@@ -154,10 +167,53 @@ export default function ListPlanPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlans.map((p) => (
+              {paginatedPlans.map((p) => (
                 <PlanCard key={p.id} plan={p} onBook={handleBooking} />
               ))}
             </div>
+
+            {/* UI Phân trang */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center items-center gap-2">
+                {/* Nút Trước */}
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-sm font-bold text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
+                >
+                  Trước
+                </button>
+
+                {/* Danh sách số trang */}
+                {[...Array(totalPages)].map((_, index) => {
+                  const pageNumber = index + 1;
+                  const isActive = currentPage === pageNumber;
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-10 h-10 rounded-lg text-sm font-bold transition-all border ${
+                        isActive
+                          ? "bg-slate-900 border-slate-900 text-white shadow-md" // Active: Nền đen chữ trắng
+                          : "bg-white border-slate-300 text-slate-900 hover:border-slate-900 hover:bg-slate-50" // Thường: Chữ đen border xám
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+
+                {/* Nút Sau */}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-sm font-bold text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
+                >
+                  Sau
+                </button>
+              </div>
+            )}
           </>
         )}
 

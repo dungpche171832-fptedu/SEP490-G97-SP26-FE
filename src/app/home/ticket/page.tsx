@@ -109,9 +109,7 @@ function AddTicketContent() {
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [branchImage, setBranchImage] = useState<string>(
-    "https://png.pngtree.com/png-clipart/20250427/original/pngtree-3d-qr-code-icon-isolated-on-transparent-background-png-image_20875047.png",
-  );
+  const [branchImage, setBranchImage] = useState<string>("/images/QR.png");
   const [isFetchingImage, setIsFetchingImage] = useState(false);
 
   useEffect(() => {
@@ -277,8 +275,8 @@ function AddTicketContent() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-              <span className="p-2 bg-blue-600 text-white rounded-lg text-sm">BUS</span>
-              ĐẶT VÉ {carInfo?.description || carInfo?.carType || "LIMOUSINE"}
+              <span className="p-2 bg-blue-600 text-white rounded-lg text-sm">CAR</span>
+              ĐẶT VÉ LIMOUSINE
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Lịch trình: <span className="text-blue-600 font-bold">{planDetail?.code}</span>
