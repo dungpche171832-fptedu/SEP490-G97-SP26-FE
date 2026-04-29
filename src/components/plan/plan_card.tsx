@@ -2,7 +2,6 @@
 import React from "react";
 import Image from "next/image";
 import { Plan } from "src/model/plan";
-import bus3 from "/public/images/bus3.png";
 
 interface PlanCardProps {
   plan: Plan;
@@ -26,10 +25,10 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
   };
 
   const start = formatDateTime(plan.startTime);
-  const sortedStations = [...plan.stations].sort((a, b) => a.stationOrder - b.stationOrder);
-  const from = sortedStations[0]?.stationName || "Hà Nội";
-  const to = sortedStations[sortedStations.length - 1]?.stationName || "Hải Phòng";
-
+  // const sortedStations = [...plan.stations].sort((a, b) => a.stationOrder - b.stationOrder);
+  // const from = sortedStations[0]?.stationName || "Hà Nội";
+  // const to = sortedStations[sortedStations.length - 1]?.stationName || "Hải Phòng";
+  const namePlan = plan.routeName;
   const statusLower = plan.status.toLowerCase();
   const isActive = statusLower === "active" || statusLower === "hoạt động";
   const isPending = statusLower === "pending" || statusLower === "tạm dừng";
@@ -65,9 +64,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <h3 className="font-bold text-slate-700 text-sm">
-            {from} → {to}
-          </h3>
+          <h3 className="font-bold text-slate-700 text-sm">{namePlan}</h3>
         </div>
 
         <div className="flex justify-between items-center text-slate-400 text-[11px] mb-4">
