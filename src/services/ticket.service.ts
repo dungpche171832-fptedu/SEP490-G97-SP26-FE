@@ -395,6 +395,18 @@ export const getMyTickets = async (params?: TicketQueryParams): Promise<TicketIn
     return [];
   }
 };
+export const getListTickets = async (): Promise<TicketInfo[]> => {
+  try {
+    const response = await ticketClient.get(`/ticket`);
+    const data = response.data;
+
+    // Xử lý các trường hợp bọc dữ liệu khác nhau của backend
+    if (Array.isArray(data)) return data;
+    return data?.tickets || data?.result || data?.data || [];
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const updateTicketStatus = async (ticketId: number, status: string) => {
   try {

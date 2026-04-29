@@ -13,7 +13,7 @@ import {
   Loader2,
   RefreshCcw,
 } from "lucide-react";
-import { getMyTickets, updateTicketStatus, TicketInfo } from "@/services/ticket.service";
+import { getListTickets, updateTicketStatus, TicketInfo } from "@/services/ticket.service";
 import { useRouter } from "next/navigation";
 import { message } from "antd";
 
@@ -30,7 +30,7 @@ const TicketManagementPage = () => {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const data = await getMyTickets();
+      const data = await getListTickets();
       setTickets(data);
     } catch (error) {
       console.error("Lỗi fetch:", error);
