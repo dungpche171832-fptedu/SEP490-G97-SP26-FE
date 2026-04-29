@@ -14,8 +14,12 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { getMyTickets, updateTicketStatus, TicketInfo } from "@/services/ticket.service";
+import { useRouter } from "next/navigation";
+import { message } from "antd";
 
 const TicketManagementPage = () => {
+  const router = useRouter();
+
   const [tickets, setTickets] = useState<TicketInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,17 +46,17 @@ const TicketManagementPage = () => {
 
     try {
       await updateTicketStatus(ticketId, newStatus);
-      alert(`Cập nhật trạng thái vé #${ticketId} thành ${newStatus} thành công!`);
+      message.success(`Đã chuyển trạng thái vé #${ticketId} sang ${newStatus}`);
     } catch (error) {
-      console.error("Lỗi khi gọi API update status:", error);
-      alert("Cập nhật thất bại. Vui lòng kiểm tra lại kết nối hệ thống.");
+      console.error("Lỗi khi gọi API:", error);
+      message.error("Không thể cập nhật trạng thái. Vui lòng thử lại!");
       setTickets(originalTickets);
     }
   };
 
   const getStatusStyle = (status: string) => {
     switch (status?.toUpperCase()) {
-      case "COMPLETE":
+      case "COMPLETED":
         return "bg-emerald-50 text-emerald-600 border-emerald-100";
       case "PENDING":
         return "bg-slate-100 text-slate-500 border-slate-200";
@@ -109,8 +113,9 @@ const TicketManagementPage = () => {
             <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none">
               <option>Tất cả</option>
               <option value="PENDING">PENDING</option>
-              <option value="COMPLETE">COMPLETE</option>
+              <option value="COMPLETED">COMPLETED</option>
               <option value="CANCELLED">CANCELLED</option>
+              <option value="CANCELLED">BOOKED</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -176,9 +181,9 @@ const TicketManagementPage = () => {
                     className={`w-full pl-3 pr-8 py-1.5 rounded-full text-[10px] font-extrabold border uppercase tracking-wider appearance-none cursor-pointer focus:outline-none transition-all ${getStatusStyle(ticket.status)}`}
                   >
                     <option value="PENDING">PENDING</option>
-                    <option value="COMPLETE">COMPLETE</option>
+                    <option value="COMPLETED">COMPLETED</option>
                     <option value="CANCELLED">CANCELLED</option>
-                    {ticket.status === "BOOKED" && <option value="BOOKED">BOOKED</option>}
+                    <option value="BOOKED">BOOKED</option>
                   </select>
                   <ChevronDown className="absolute right-2 top-2 w-3.5 h-3.5 pointer-events-none opacity-50" />
                 </div>
@@ -211,7 +216,10 @@ const TicketManagementPage = () => {
               </div>
 
               <div className="w-[10%] flex justify-end items-center gap-2">
-                <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition">
+                <button
+                  onClick={() => router.push(`/admin/manageTicket/${ticket.id}`)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition"
+                >
                   Chi tiết
                 </button>
                 <button className="p-2 border border-slate-200 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition">

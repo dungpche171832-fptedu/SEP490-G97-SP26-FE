@@ -1,12 +1,5 @@
-// src/services/ticket.service.ts
 import axios from "axios";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
-
-// ============================================================================
-// 1. CẤU HÌNH & KIỂU DỮ LIỆU
-// ============================================================================
-
 export interface TicketAddRequest {
   planId: number;
   carId: number;
@@ -28,23 +21,56 @@ export interface PriceResponse {
 export interface TicketInfo {
   id: number;
   bookingCode: string;
-  totalAmount: number;
-  status: string;
-  distanceKm: number;
-  accountId: number;
+
   planId: number;
+  planCode?: string;
+
   carId: number;
+  carLicensePlate?: string;
+  carType?: string;
+
+  branchId?: number;
+  branchName?: string;
+
+  accountId: number;
+  accountName?: string;
+
+  distanceKm: number;
+  totalAmount: number;
+
+  startStationId?: number;
+  startStation?: string;
+
+  endStationId?: number;
+  endStation?: string;
+
+  status: string;
   note?: string;
+
+  startTime?: string;
+
+  seatNumbers?: string[];
+  totalSeats?: number;
+
   bookingDate?: string;
+
   [key: string]: unknown;
 }
 
-// Interface cho phản hồi đặt vé thành công
 export interface BookTicketResponse {
   success: boolean;
   message?: string;
   result?: TicketInfo;
   data?: TicketInfo;
+}
+export interface ChangePlanRequest {
+  newPlanId: number;
+  newSeatIds: number[];
+}
+export interface ChangePlanResponse {
+  success?: boolean;
+  message?: string;
+  data?: unknown;
 }
 
 const ticketClient = axios.create({
@@ -64,13 +90,6 @@ ticketClient.interceptors.request.use((config) => {
   return config;
 });
 
-// ============================================================================
-// 2. CÁC HÀM XỬ LÝ API
-// ============================================================================
-
-/**
- * 1. Lấy khoảng cách thực tế từ OSRM
- */
 export const calculateDistanceOSRM = async (
   lngA: number,
   latA: number,
@@ -92,9 +111,6 @@ export const calculateDistanceOSRM = async (
   }
 };
 
-/**
- * 1.5 Lấy khoảng cách đi qua nhiều trạm
- */
 export const calculateDistanceOSRMList = async (
   coordinates: { lng: number; lat: number }[],
 ): Promise<number> => {
@@ -115,9 +131,6 @@ export const calculateDistanceOSRMList = async (
   }
 };
 
-/**
- * 2. Xem trước giá vé (Preview)
- */
 export const previewTicketPrice = async (payload: {
   carType: string;
   distanceKm: number;
@@ -148,10 +161,6 @@ export const previewTicketPrice = async (payload: {
   }
 };
 
-/**
- * 3. Xác nhận đặt vé chính thức (Book)
- * Đã thay thế Promise<any> bằng Promise<BookTicketResponse>
- */
 export const bookTicket = async (payload: TicketAddRequest): Promise<BookTicketResponse> => {
   try {
     const response = await ticketClient.post<BookTicketResponse>(`/ticket`, payload);
@@ -162,16 +171,10 @@ export const bookTicket = async (payload: TicketAddRequest): Promise<BookTicketR
   }
 };
 
-/**
- * 4. Lấy danh sách lịch sử đặt vé
- * Đã thay thế Promise<any[]> bằng Promise<TicketInfo[]>
- */
 export const getMyTickets = async (): Promise<TicketInfo[]> => {
   try {
     const response = await ticketClient.get(`/ticket`);
     const data = response.data;
-
-    // Xử lý các trường hợp bọc dữ liệu khác nhau của backend
     if (Array.isArray(data)) return data;
     return data?.tickets || data?.result || data?.data || [];
   } catch (error) {
@@ -189,6 +192,32 @@ export const updateTicketStatus = async (ticketId: number, status: string) => {
     return response.data;
   } catch (error) {
     console.error("Lỗi cập nhật status:", error);
+    throw error;
+  }
+};
+export const getTicketById = async (ticketId: string | number): Promise<TicketInfo | null> => {
+  try {
+    const response = await ticketClient.get(`/ticket/${ticketId}`);
+    const data = response.data;
+    return data?.result || data?.data || data || null;
+  } catch (error) {
+    console.error("Lỗi khi lấy chi tiết vé:", error);
+    return null;
+  }
+};
+export const changePlan = async (
+  ticketId: number | string,
+  payload: ChangePlanRequest,
+): Promise<ChangePlanResponse> => {
+  try {
+    const response = await ticketClient.put<ChangePlanResponse>(
+      `/ticket/${ticketId}/change-plan`,
+      payload,
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi khi đổi chuyến:", error);
     throw error;
   }
 };

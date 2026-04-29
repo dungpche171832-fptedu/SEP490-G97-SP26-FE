@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Button, DatePicker, Select, message } from "antd";
 import {
@@ -9,40 +8,49 @@ import {
   SearchOutlined,
   CaretDownOutlined,
 } from "@ant-design/icons";
-import { cityService } from "src/services/cityService";
-import { City } from "src/model/city";
+import { getStations, Station } from "src/services/station.service";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-  const [cities, setCities] = useState<City[]>([]);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [stations, setStations] = useState<Station[]>([]);
+  const [departureId, setDepartureId] = useState<number | undefined>(undefined);
+  const [destinationId, setDestinationId] = useState<number | undefined>(undefined);
+  const [travelDate, setTravelDate] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadCities = async () => {
-      setLoading(true);
+    const loadStations = async () => {
       try {
-        const data = await cityService.getAllCities();
-        const cityData: City[] = Array.isArray(data)
-          ? data
-          : (data as { content?: City[] })?.content || [];
-        setCities(cityData);
+        const data = await getStations();
+        setStations(data.stations || []);
       } catch {
-        message.error("Không thể tải danh sách tỉnh thành");
-      } finally {
-        setLoading(false);
+        message.error("Không thể tải danh sách điểm dừng");
       }
     };
-    loadCities();
+    loadStations();
   }, []);
 
-  // Map dữ liệu dùng kiểu City thay vì any
-  const cityOptions = cities.map((c: City) => ({
-    value: c.id,
-    label: c.name,
+  const stationOptions = stations.map((s: Station) => ({
+    value: s.id,
+    label: s.name,
   }));
+
+  const handleSearchClick = () => {
+    if (!departureId || !destinationId) {
+      message.warning("Vui lòng chọn đầy đủ điểm đi và điểm đến");
+      return;
+    }
+
+    const query = new URLSearchParams();
+    query.append("dep", departureId.toString());
+    query.append("des", destinationId.toString());
+    if (travelDate) query.append("date", travelDate);
+
+    router.push(`/home/plan?${query.toString()}`);
+  };
 
   return (
     <div className="flex flex-col w-full bg-white">
-      {/* 1. HERO SECTION */}
       <section className="relative w-full pt-16 pb-24 overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="flex-1 space-y-6 z-10">
@@ -52,18 +60,10 @@ export default function HomePage() {
             <p className="text-gray-500 text-lg max-w-lg leading-relaxed">
               Hệ thống vận tải cao cấp kết nối các tỉnh thành với đội ngũ xe Limousine hiện đại.
             </p>
-            <Button
-              type="primary"
-              size="large"
-              className="h-14 px-10 text-lg font-bold rounded-xl bg-blue-600 border-none shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
-            >
-              Tìm Chuyến Ngay
-            </Button>
           </div>
 
           <div className="flex-1 relative">
-            <div className="w-full h-[500px] rounded-[40px] overflow-hidden shadow-2xl rotate-2 hover:rotate-0 transition-all duration-500">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <div className="w-full h-[500px] rounded-[40px] overflow-hidden shadow-2xl rotate-2 hover:rotate-0 transition-all duration-500 relative">
               <img
                 src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=2069&auto=format&fit=crop"
                 alt="Limousine Bus"
@@ -85,12 +85,13 @@ export default function HomePage() {
               </label>
               <Select
                 showSearch
-                loading={loading}
+                allowClear
                 placeholder="Chọn điểm đi"
                 size="large"
                 className="w-full"
-                suffixIcon={<CaretDownOutlined />}
-                options={cityOptions}
+                options={stationOptions}
+                value={departureId}
+                onChange={(val) => setDepartureId(val)}
                 optionFilterProp="label"
               />
             </div>
@@ -101,12 +102,13 @@ export default function HomePage() {
               </label>
               <Select
                 showSearch
-                loading={loading}
+                allowClear
                 placeholder="Chọn điểm đến"
                 size="large"
                 className="w-full"
-                suffixIcon={<CaretDownOutlined />}
-                options={cityOptions}
+                options={stationOptions}
+                value={destinationId}
+                onChange={(val) => setDestinationId(val)}
                 optionFilterProp="label"
               />
             </div>
@@ -120,6 +122,7 @@ export default function HomePage() {
                 className="w-full"
                 placeholder="Chọn ngày"
                 suffixIcon={<CaretDownOutlined />}
+                onChange={(date) => setTravelDate(date ? date.format("YYYY-MM-DD") : null)}
               />
             </div>
 
@@ -127,6 +130,7 @@ export default function HomePage() {
               type="primary"
               size="large"
               className="h-12 bg-blue-600 font-bold rounded-xl"
+              onClick={handleSearchClick}
               icon={<SearchOutlined />}
             >
               Tìm Kiếm
@@ -137,7 +141,7 @@ export default function HomePage() {
 
       {/* 3. POPULAR ROUTES SECTION */}
       <section className="max-w-[1440px] mx-auto px-10 py-32 w-full text-center">
-        <h2 className="text-4xl font-bold text-slate-900 mb-16">Các tuyến đường phổ biến</h2>
+        <h2 className="text-4xl font-bold text-slate-900 mb-16">Tin Tức Mới</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
@@ -157,11 +161,10 @@ export default function HomePage() {
               key={i}
               className="group relative h-[450px] rounded-[32px] overflow-hidden cursor-pointer shadow-xl transition-all duration-500 hover:-translate-y-2"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={route.img}
-                className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
                 alt={route.title}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end text-left">
                 <h3 className="text-white text-2xl font-bold">{route.title}</h3>
