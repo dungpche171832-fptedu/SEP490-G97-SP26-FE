@@ -2,7 +2,17 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Table, Input, Button, Tag, Pagination, Space, ConfigProvider, message } from "antd";
+import {
+  Table,
+  Input,
+  Button,
+  Tag,
+  Pagination,
+  Space,
+  ConfigProvider,
+  message,
+  Select,
+} from "antd";
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { planService } from "@/services/planService";
@@ -18,6 +28,7 @@ interface PlanTableItem {
   startStation: string;
   endStation: string;
   startTime: string;
+  rawStartTime: string;
   status: PlanStatus;
 }
 
@@ -27,6 +38,33 @@ function formatDateTime(value: string): string {
   const normalizedValue = value.replace("T", " ");
 
   return normalizedValue.slice(0, 16);
+}
+
+function getTimeValue(value: string): number {
+  if (!value) return 0;
+
+  const time = new Date(value).getTime();
+
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function sortPlansByStartTime(a: PlanTableItem, b: PlanTableItem): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayTime = today.getTime();
+
+  const aTime = getTimeValue(a.rawStartTime);
+  const bTime = getTimeValue(b.rawStartTime);
+
+  const aIsPast = aTime < todayTime;
+  const bIsPast = bTime < todayTime;
+
+  if (aIsPast !== bIsPast) {
+    return aIsPast ? 1 : -1;
+  }
+
+  return bTime - aTime;
 }
 
 function getSortedStations(stations: PlanStationResponse[] = []): PlanStationResponse[] {
@@ -54,6 +92,7 @@ export default function PlanManagementPage() {
   const [plans, setPlans] = useState<PlanTableItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<PlanStatus | "ALL">("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const pageSize = 10;
@@ -79,11 +118,12 @@ export default function PlanManagementPage() {
           startStation,
           endStation,
           startTime: formatDateTime(item.startTime),
+          rawStartTime: item.startTime,
           status: item.status,
         };
       });
 
-      setPlans(mappedData);
+      setPlans([...mappedData].sort(sortPlansByStartTime));
     } catch (error: unknown) {
       let errorMsg = "Không thể tải danh sách lịch trình";
 
@@ -104,18 +144,21 @@ export default function PlanManagementPage() {
   const filteredData = useMemo(() => {
     const keyword = searchText.toLowerCase().trim();
 
-    if (!keyword) return plans;
+    return plans.filter((item) => {
+      const matchesStatus = statusFilter === "ALL" || item.status === statusFilter;
 
-    return plans.filter(
-      (item) =>
+      const matchesKeyword =
+        !keyword ||
         item.code.toLowerCase().includes(keyword) ||
         item.driver.toLowerCase().includes(keyword) ||
         item.driverPhone.toLowerCase().includes(keyword) ||
         item.routeName.toLowerCase().includes(keyword) ||
         item.startStation.toLowerCase().includes(keyword) ||
-        item.endStation.toLowerCase().includes(keyword),
-    );
-  }, [plans, searchText]);
+        item.endStation.toLowerCase().includes(keyword);
+
+      return matchesStatus && matchesKeyword;
+    });
+  }, [plans, searchText, statusFilter]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -125,7 +168,7 @@ export default function PlanManagementPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchText]);
+  }, [searchText, statusFilter]);
 
   const columns: ColumnsType<PlanTableItem> = [
     {
@@ -255,15 +298,30 @@ export default function PlanManagementPage() {
           </Button>
         </div>
 
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <Input
-            placeholder="Tìm kiếm mã, tài xế, tuyến..."
-            prefix={<SearchOutlined className="mr-2 text-slate-400" />}
-            className="h-11 max-w-md rounded-lg border-slate-200 bg-slate-50/50"
-            value={searchText}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
-            allowClear
-          />
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <Input
+              placeholder="Tìm kiếm mã, tài xế, tuyến..."
+              prefix={<SearchOutlined className="mr-2 text-slate-400" />}
+              className="h-11 w-full rounded-lg border-slate-200 bg-slate-50/50 sm:w-[420px]"
+              value={searchText}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+              allowClear
+            />
+
+            <Select<PlanStatus | "ALL">
+              value={statusFilter}
+              onChange={(value: PlanStatus | "ALL") => setStatusFilter(value)}
+              className="h-11 w-full sm:w-56"
+              options={[
+                { value: "ALL", label: "Tất cả trạng thái" },
+                { value: "ACTIVE", label: "Hoạt động" },
+                { value: "INACTIVE", label: "Không hoạt động" },
+                { value: "RUNNING", label: "Đang chạy" },
+                { value: "COMPLETE", label: "Hoàn thành" },
+              ]}
+            />
+          </div>
 
           <Button
             onClick={fetchPlans}

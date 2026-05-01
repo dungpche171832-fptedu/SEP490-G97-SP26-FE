@@ -45,9 +45,15 @@ export default function ListPlanPage() {
 
   // Logic Lọc: Thêm điều kiện status === "ACTIVE"
   const filteredPlans = useMemo(() => {
+    const today = dayjs().startOf("day");
+
     return plans.filter((p) => {
       // Chỉ lấy các plan có trạng thái ACTIVE
       const isActive = p.status === "ACTIVE";
+
+      // Chỉ lấy lịch trình từ hôm nay trở đi
+      const planDate = dayjs(p.startTime);
+      const isFromToday = planDate.isValid() && !planDate.isBefore(today, "day");
 
       const startStation = p.startStationName ?? "";
       const endStation = p.endStationName ?? "";
@@ -59,7 +65,7 @@ export default function ListPlanPage() {
         ? dayjs(p.startTime).format("YYYY-MM-DD") === filterQuery.date
         : true;
 
-      return isActive && matchesSearch && matchesDate;
+      return isActive && isFromToday && matchesSearch && matchesDate;
     });
   }, [filterQuery, plans]);
 
@@ -123,6 +129,9 @@ export default function ListPlanPage() {
                   className="w-full px-4 py-2.5 text-sm font-black"
                   style={{ width: "100%" }}
                   value={dateInput ? dayjs(dateInput) : null}
+                  disabledDate={(current) => {
+                    return current ? current.isBefore(dayjs().startOf("day"), "day") : false;
+                  }}
                   onChange={(date) => {
                     setDateInput(date ? date.format("YYYY-MM-DD") : null);
                   }}

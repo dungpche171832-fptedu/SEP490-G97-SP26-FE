@@ -19,7 +19,7 @@ import {
 import { planService } from "@/services/planService";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Car } from "@/services/carService";
+import type { Car } from "@/model/car";
 
 // --- Interfaces để tránh lỗi 'any' ---
 interface Station {
@@ -34,7 +34,7 @@ interface Station {
 }
 
 interface Seat {
-  id: number;
+  id?: number;
   seatId: number;
   seatNumber: string;
   status: string;
@@ -43,9 +43,9 @@ interface Seat {
 interface PlanData {
   id: number;
   code: string;
-  startStation: Station;
+  startStation?: Station;
   start_station?: Station;
-  endStations: Station[];
+  endStations?: Station[];
   end_stations?: Station[];
   car?: Car & {
     branch?: {
@@ -98,6 +98,7 @@ function AddTicketContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = Number(searchParams.get("planId") || 0);
+  const loginPath = "/login";
 
   const [planDetail, setPlanDetail] = useState<PlanData | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
@@ -125,7 +126,8 @@ function AddTicketContent() {
         setPlanDetail(res);
         const endStations = res?.endStations || res?.end_stations || [];
         if (endStations.length > 0) {
-          setSelectedDropOff(endStations[0].id || endStations[0].stationId);
+          const firstDropOffId = endStations[0].id ?? endStations[0].stationId ?? null;
+          setSelectedDropOff(firstDropOffId);
         }
       } catch {
         message.error("Lỗi kết nối dữ liệu chuyến xe.");
@@ -196,6 +198,16 @@ function AddTicketContent() {
   const handleShowPaymentModal = async () => {
     if (selectedSeats.length === 0) {
       message.warning("Vui lòng chọn chỗ ngồi trước khi đặt!");
+      return;
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      message.warning("Vui lòng đăng nhập để thanh toán vé.");
+
+      const currentTicketUrl = `/home/ticket?${searchParams.toString()}`;
+      router.push(`${loginPath}?redirect=${encodeURIComponent(currentTicketUrl)}`);
       return;
     }
 

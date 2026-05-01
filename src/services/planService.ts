@@ -7,13 +7,31 @@ import type {
   ChangeDriverPayload,
   ChangeCarPayload,
   PlanSearchParams,
+  PlanSeatResponse,
+  TicketStationResponse,
 } from "../model/plan";
+import type { Car } from "../model/car";
+
+type PlanCarForTicket = Car & {
+  branchId?: number;
+  branchCode?: string;
+  branch?: {
+    id?: number;
+    code?: string;
+    name?: string;
+    imageUrl?: string;
+  };
+};
 
 interface PlanDetailForTicket extends PlanDetailResponse {
-  startStation?: unknown;
-  endStations?: unknown[];
-  allStations?: unknown[];
-  carInfo?: unknown;
+  startStation?: TicketStationResponse;
+  start_station?: TicketStationResponse;
+  endStations?: TicketStationResponse[];
+  end_stations?: TicketStationResponse[];
+  allStations?: TicketStationResponse[];
+  listSeats?: PlanSeatResponse[];
+  car?: PlanCarForTicket;
+  carInfo?: PlanCarForTicket;
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -355,7 +373,7 @@ export const planService = {
     return await response.text();
   },
 
-  getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailResponse> => {
+  getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailForTicket> => {
     const response = await fetch(`http://localhost:8080/api/plans/${id}`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -380,7 +398,7 @@ export const planService = {
       if (stRes.ok) {
         const stData = await stRes.json();
 
-        const stationsList = unwrapApiResponse<unknown[]>(stData);
+        const stationsList = unwrapApiResponse<TicketStationResponse[]>(stData);
 
         if (Array.isArray(stationsList) && stationsList.length > 0) {
           planDetail.startStation = stationsList[0];
@@ -402,7 +420,7 @@ export const planService = {
         if (carRes.ok) {
           const carData = await carRes.json();
 
-          planDetail.carInfo = unwrapApiResponse<unknown>(carData);
+          planDetail.carInfo = unwrapApiResponse<PlanCarForTicket>(carData);
         }
       }
     } catch (err: unknown) {
