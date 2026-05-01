@@ -7,11 +7,36 @@ import { Dropdown } from "antd";
 import type { MenuProps } from "antd";
 import { getToken, clearToken } from "src/lib/auth/auth.service";
 
+type HeaderUserData = {
+  fullName: string;
+  role: string;
+  roleId: string | null;
+};
+
+const ROLE_NAME_BY_ID: Record<string, string> = {
+  "1": "ADMIN",
+  "2": "MANAGER",
+  "3": "STAFF",
+};
+
+function isBackOfficeRole(role: string | null, roleId: string | null): boolean {
+  const normalizedRole = role?.toLowerCase() ?? "";
+
+  return (
+    normalizedRole.includes("admin") ||
+    normalizedRole.includes("manager") ||
+    normalizedRole.includes("staff") ||
+    roleId === "1" ||
+    roleId === "2" ||
+    roleId === "3"
+  );
+}
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [userData, setUserData] = useState<{ fullName: string; role: string } | null>(null);
+  const [userData, setUserData] = useState<HeaderUserData | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -19,17 +44,18 @@ export default function Header() {
       const token = getToken();
       const fullName = localStorage.getItem("fullName");
       const role = localStorage.getItem("role");
+      const roleId = localStorage.getItem("roleId");
 
-      let currentUser = null;
+      let currentUser: HeaderUserData | null = null;
+
       if (token && fullName) {
         currentUser = {
-          fullName: fullName,
-          role: role || "Khách hàng",
+          fullName,
+          role: role || ROLE_NAME_BY_ID[roleId ?? ""] || "Khách hàng",
+          roleId,
         };
       }
 
-      // Đẩy việc set state vào hàng chờ (Queue) để tránh lỗi đồng bộ
-      // Điều này giúp ESLint nhận diện đây là tác vụ side-effect hợp lệ
       setTimeout(() => {
         setUserData(currentUser);
         setIsClient(true);
@@ -39,21 +65,55 @@ export default function Header() {
     initAuth();
   }, []);
 
+  const isBackOfficeUser = userData ? isBackOfficeRole(userData.role, userData.roleId) : false;
+
+  const shouldShowCustomerNav = isClient && !isBackOfficeUser;
+
   const handleLogout = () => {
     clearToken();
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    localStorage.removeItem("role");
+    localStorage.removeItem("roleId");
+    localStorage.removeItem("fullName");
+
     setUserData(null);
     router.push("/login");
   };
+
+  const handleBackToAdmin = () => {
+    const roleId = localStorage.getItem("roleId");
+    const role = localStorage.getItem("role")?.toLowerCase();
+
+    if (roleId === "1" || role === "admin") {
+      router.push("/admin/branch");
+      return;
+    }
+
+    if (roleId === "2" || roleId === "3" || role === "manager" || role === "staff") {
+      router.push("/admin/managePlan");
+      return;
+    }
+
+    router.push("/login");
+  };
+
+  const ticketHistoryMenuItems: MenuProps["items"] = isBackOfficeUser
+    ? []
+    : [
+        {
+          key: "2",
+          label: <Link href="/home/ticket/historyTicket">Lịch sử đặt vé</Link>,
+        },
+      ];
 
   const userMenuItems: MenuProps["items"] = [
     {
       key: "1",
       label: <Link href="/home/profile">Thông tin cá nhân</Link>,
     },
-    {
-      key: "2",
-      label: <Link href="/home/ticket/historyTicket">Lịch sử đặt vé</Link>,
-    },
+    ...ticketHistoryMenuItems,
     {
       type: "divider",
     },
@@ -61,9 +121,9 @@ export default function Header() {
       key: "3",
       danger: true,
       label: (
-        <div onClick={handleLogout} className="w-full">
+        <button type="button" onClick={handleLogout} className="w-full text-left">
           Đăng xuất
-        </div>
+        </button>
       ),
     },
   ];
@@ -79,9 +139,12 @@ export default function Header() {
 
   return (
     <header className="w-full bg-gradient-to-r from-[#1e3a8a] via-[#1d4ed8] to-[#1e40af] text-white shadow-lg">
-      <div className="w-full mx-auto h-20 px-10 flex items-center justify-between">
+      <div className="relative w-full mx-auto h-20 px-10 flex items-center justify-between">
         {/* Logo Section */}
-        <Link href="/home" className="flex items-center gap-3 cursor-pointer">
+        <Link
+          href={isBackOfficeUser ? "/home/profile" : "/home"}
+          className="flex items-center gap-3 cursor-pointer"
+        >
           <div className="p-2 bg-white/10 rounded-lg">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -98,29 +161,48 @@ export default function Header() {
               />
             </svg>
           </div>
+
           <h1 className="text-2xl font-bold tracking-tight text-white">Xe Limou Việt Trung</h1>
         </Link>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:block">
-          <ul className="flex items-center gap-12 text-lg font-medium">
-            {navLinks.map((link) => (
-              <li key={link.href} className="relative group cursor-pointer">
-                <Link
-                  href={link.href}
-                  className={`transition-colors duration-300 ${isActive(link.href) ? "text-white" : "text-blue-200 hover:text-white"}`}
-                >
-                  {link.name}
-                </Link>
-                <div
-                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 h-1 bg-white rounded-full transition-all duration-300
-                    ${isActive(link.href) ? "w-6 opacity-100" : "w-0 opacity-0 group-hover:w-4 group-hover:opacity-50"}
-                  `}
-                ></div>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {/* Navigation Links - chỉ hiện với Guest và Customer */}
+        {shouldShowCustomerNav && (
+          <nav className="hidden md:block">
+            <ul className="flex items-center gap-12 text-lg font-medium">
+              {navLinks.map((link) => (
+                <li key={link.href} className="relative group cursor-pointer">
+                  <Link
+                    href={link.href}
+                    className={`transition-colors duration-300 ${
+                      isActive(link.href) ? "text-white" : "text-blue-200 hover:text-white"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+
+                  <div
+                    className={`absolute -bottom-2 left-1/2 -translate-x-1/2 h-1 bg-white rounded-full transition-all duration-300 ${
+                      isActive(link.href)
+                        ? "w-6 opacity-100"
+                        : "w-0 opacity-0 group-hover:w-4 group-hover:opacity-50"
+                    }`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+
+        {/* Nút trở về quản trị - chỉ hiện với Admin / Manager / Staff */}
+        {isClient && isBackOfficeUser && (
+          <button
+            type="button"
+            onClick={handleBackToAdmin}
+            className="absolute left-1/2 -translate-x-1/2 text-white text-base font-semibold hover:text-blue-100 transition-colors"
+          >
+            Trở về
+          </button>
+        )}
 
         {/* Right Section */}
         <div className="flex items-center gap-6">
@@ -129,18 +211,23 @@ export default function Header() {
               <div className="flex items-center gap-3 bg-white/10 border border-white/20 backdrop-blur-sm pl-2 pr-4 py-1.5 rounded-full cursor-pointer hover:bg-white/20 transition group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userData.fullName)}`}
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                    userData.fullName,
+                  )}`}
                   alt="Avatar"
                   className="w-10 h-10 rounded-full border-2 border-yellow-400 bg-slate-200"
                 />
+
                 <div className="flex flex-col text-white">
                   <span className="text-sm font-bold leading-none uppercase">
                     {userData.fullName}
                   </span>
+
                   <span className="text-[11px] text-yellow-400 flex items-center gap-1">
                     ★ <span className="text-white/80 text-[10px]">{userData.role}</span>
                   </span>
                 </div>
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
