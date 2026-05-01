@@ -131,7 +131,7 @@ export default function Header() {
   const navLinks = [
     { name: "Trang Chủ", href: "/home" },
     { name: "Lịch Trình", href: "/home/plan" },
-    { name: "Liên hệ", href: "/lien-he" },
+    // { name: "Liên hệ", href: "/lien-he" },
     { name: "Tin tức", href: "/tin-tuc" },
   ];
 

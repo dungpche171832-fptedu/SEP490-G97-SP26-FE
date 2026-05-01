@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card, DatePicker, Input, Select, message } from "antd";
 import { InfoCircleOutlined, CarOutlined, SwapOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import dayjs, { type Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 import type { Account } from "@/model/account";
 import type { Car } from "@/model/car";
 import type { RouteResponse } from "@/model/route";
@@ -15,8 +16,6 @@ import { getRoutes, getRouteDetail } from "@/services/routeService";
 
 export default function CreatePlanPage() {
   const router = useRouter();
-
-  const [planCode] = useState(() => `VT-${dayjs().format("YYYYMMDDHHmmss")}`);
 
   const [drivers, setDrivers] = useState<Account[]>([]);
   const [driverLoading, setDriverLoading] = useState(false);
@@ -39,6 +38,22 @@ export default function CreatePlanPage() {
   const [departureTime, setDepartureTime] = useState<Dayjs | null>(null);
   const [returnStartTime, setReturnStartTime] = useState<Dayjs | null>(null);
 
+  const selectedCar = useMemo(
+    () => cars.find((car) => car.id === selectedCarId) || null,
+    [cars, selectedCarId],
+  );
+
+  const planCode = useMemo(() => {
+    if (!departureTime || !selectedCar?.licensePlate) {
+      return "";
+    }
+
+    const datePart = departureTime.format("YYYYMMDD");
+    const licensePlatePart = selectedCar.licensePlate.replace(/[^a-zA-Z0-9]/g, "");
+
+    return `VT-${datePart}-${licensePlatePart}`;
+  }, [departureTime, selectedCar]);
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -50,7 +65,10 @@ export default function CreatePlanPage() {
         setDrivers(data);
       } catch (error: unknown) {
         console.error(error);
-        message.error("Không thể tải danh sách tài xế");
+
+        const errorMessage = error instanceof Error ? error.message : "Tạo lịch trình thất bại";
+
+        message.error(errorMessage);
       } finally {
         setDriverLoading(false);
       }
@@ -177,6 +195,11 @@ export default function CreatePlanPage() {
         return;
       }
 
+      if (!planCode) {
+        message.error("Không thể tạo mã lịch trình, vui lòng chọn xe và thời gian xuất phát");
+        return;
+      }
+
       setSaving(true);
 
       const currentAccount = await getAccountInfo();
@@ -187,8 +210,8 @@ export default function CreatePlanPage() {
         carId: selectedCarId,
         accountId: selectedDriverId,
         branchId: currentAccount.branchId,
-        startTime: departureTime.toISOString(),
-        returnStartTime: returnStartTime.toISOString(),
+        startTime: departureTime.format("YYYY-MM-DDTHH:mm:ss"),
+        returnStartTime: returnStartTime.format("YYYY-MM-DDTHH:mm:ss"),
         status: "ACTIVE",
       };
 
@@ -198,7 +221,11 @@ export default function CreatePlanPage() {
       router.push("/admin/managePlan");
     } catch (error: unknown) {
       console.error(error);
-      message.error("Tạo lịch trình thất bại");
+
+      const errorMessage =
+        error instanceof Error && error.message.trim() ? error.message : "Tạo lịch trình thất bại";
+
+      message.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -248,10 +275,11 @@ export default function CreatePlanPage() {
         <Card className="rounded-2xl border-0 shadow-[0_16px_45px_rgba(16,24,40,0.06)]">
           <div className="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
             <div>
-              <Label required>Mã lịch trình</Label>
+              <Label>Mã lịch trình</Label>
               <Input
                 value={planCode}
                 readOnly
+                placeholder="không bắt buộc"
                 className="h-11 rounded-xl border-none bg-[#F2F4F7] text-[#667085]"
               />
             </div>
@@ -326,7 +354,6 @@ export default function CreatePlanPage() {
         />
       </section>
 
-      {}
       <div className="mt-28 h-[160px] rounded-2xl bg-white shadow-[0_16px_45px_rgba(16,24,40,0.05)]" />
     </div>
   );

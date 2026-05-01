@@ -30,16 +30,18 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
-function unwrapApiResponse<T>(data: unknown): T {
-  if (data && typeof data === "object") {
-    const record = data as Record<string, unknown>;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
-    if (record.result !== undefined) {
-      return record.result as T;
+function unwrapApiResponse<T>(data: unknown): T {
+  if (isRecord(data)) {
+    if (data.result !== undefined) {
+      return data.result as T;
     }
 
-    if (record.data !== undefined) {
-      return record.data as T;
+    if (data.data !== undefined) {
+      return data.data as T;
     }
   }
 
@@ -54,6 +56,87 @@ async function getErrorMessage(response: Response, fallbackMessage: string): Pro
   }
 
   return `${fallbackMessage}: ${response.status}`;
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function getStringValue(record: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
+}
+
+function isBusinessErrorText(message: string): boolean {
+  return (
+    message.includes("Tài xế đã có lịch") ||
+    message.includes("Xe đã có lịch") ||
+    message.includes("Mã lịch trình đã tồn tại") ||
+    message.includes("không tồn tại") ||
+    message.includes("không hợp lệ") ||
+    message.includes("bắt buộc") ||
+    message.includes("không đủ") ||
+    message.includes("bị trùng")
+  );
+}
+
+function getBusinessErrorMessage(data: unknown): string | null {
+  if (typeof data === "string") {
+    const text = data.trim();
+
+    if (isBusinessErrorText(text)) {
+      return text;
+    }
+
+    return null;
+  }
+
+  if (!isRecord(data)) {
+    return null;
+  }
+
+  const code = getStringValue(data, ["code", "errorCode"]);
+  const message = getStringValue(data, ["message", "errorMessage", "detail"]);
+
+  if (/^[A-Z]+-\d+$/.test(code)) {
+    return message || code;
+  }
+
+  if (isBusinessErrorText(message)) {
+    return message;
+  }
+
+  const resultError = getBusinessErrorMessage(data.result);
+  if (resultError) {
+    return resultError;
+  }
+
+  const dataError = getBusinessErrorMessage(data.data);
+  if (dataError) {
+    return dataError;
+  }
+
+  const errorError = getBusinessErrorMessage(data.error);
+  if (errorError) {
+    return errorError;
+  }
+
+  return null;
 }
 
 export const planService = {
@@ -109,6 +192,7 @@ export const planService = {
       message: "Danh sách lịch trình theo trạng thái",
     };
   },
+
   searchPlans: async (params: PlanSearchParams): Promise<PlanResponse> => {
     const headers = getAuthHeaders();
 
@@ -131,14 +215,17 @@ export const planService = {
 
     if (!response.ok) {
       const errorText = await response.text();
-      // Nếu không tìm thấy, trả về mảng rỗng thay vì báo lỗi đỏ
+
       if (response.status === 404) return { plans: [], totalCount: 0, message: "Không tìm thấy" };
+
       throw new Error(errorText || "Lỗi khi tìm kiếm lịch trình");
     }
 
     const data = await response.json();
+
     return unwrapApiResponse<PlanResponse>(data);
   },
+
   getPlanDetail: async (id: string | number): Promise<PlanDetailResponse> => {
     const response = await fetch(`http://localhost:8080/api/plans/${id}?t=${Date.now()}`, {
       method: "GET",
@@ -152,6 +239,7 @@ export const planService = {
 
     if (!response.ok) {
       const errorMessage = await getErrorMessage(response, "Không lấy được chi tiết lịch trình");
+
       console.error(`GET /api/plans/${id} failed:`, response.status, errorMessage);
 
       throw new Error(errorMessage);
@@ -181,6 +269,7 @@ export const planService = {
         response,
         "Không cập nhật được trạng thái lịch trình",
       );
+
       console.error(`PATCH /api/plans/${id}/status failed:`, response.status, errorMessage);
 
       throw new Error(errorMessage);
@@ -202,14 +291,18 @@ export const planService = {
       throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
     }
 
-    if (!response.ok) {
-      const errorMessage = await getErrorMessage(response, "Không thêm được lịch trình");
-      console.error("POST /api/plans failed:", response.status, errorMessage);
+    const responseText = await response.text();
+    const data = parseResponseBody(responseText);
 
-      throw new Error(errorMessage);
+    const businessErrorMessage = getBusinessErrorMessage(data);
+
+    if (businessErrorMessage) {
+      throw new Error(businessErrorMessage);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(responseText || `Không thêm được lịch trình: ${response.status}`);
+    }
 
     return unwrapApiResponse<PlanDetailResponse>(data);
   },
@@ -227,6 +320,7 @@ export const planService = {
 
     if (!response.ok) {
       const errorMessage = await getErrorMessage(response, "Không đổi được tài xế");
+
       console.error(
         `PUT /api/plans/${planId}/change-driver failed:`,
         response.status,
@@ -252,6 +346,7 @@ export const planService = {
 
     if (!response.ok) {
       const errorMessage = await getErrorMessage(response, "Không đổi được xe");
+
       console.error(`PUT /api/plans/${planId}/change-car failed:`, response.status, errorMessage);
 
       throw new Error(errorMessage);
@@ -268,6 +363,7 @@ export const planService = {
 
     if (!response.ok) {
       const errorMessage = await getErrorMessage(response, "Lỗi lấy thông tin chi tiết");
+
       throw new Error(errorMessage);
     }
 
@@ -292,7 +388,7 @@ export const planService = {
           planDetail.allStations = stationsList;
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn("Could not fetch stations for plan", err);
     }
 
@@ -309,7 +405,7 @@ export const planService = {
           planDetail.carInfo = unwrapApiResponse<unknown>(carData);
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn("Could not fetch car details", err);
     }
 
@@ -323,21 +419,15 @@ export const planService = {
     startTime: string;
     branchId: number;
     carType: string;
-  }) => {
+  }): Promise<PlanResponse> => {
     const url = new URL("http://localhost:8080/api/plans/plans/change-plans");
 
     url.searchParams.append("totalSeat", String(params.totalSeat));
-
     url.searchParams.append("departureStationId", String(params.departureStationId));
-
     url.searchParams.append("destinationStationId", String(params.destinationStationId));
-
     url.searchParams.append("status", "ACTIVE");
-
     url.searchParams.append("startTime", params.startTime);
-
     url.searchParams.append("branchId", String(params.branchId));
-
     url.searchParams.append("carType", params.carType);
 
     const response = await fetch(url.toString(), {
@@ -347,6 +437,7 @@ export const planService = {
 
     if (!response.ok) {
       const errorText = await response.text();
+
       throw new Error(errorText || "Không lấy được danh sách chuyến đổi");
     }
 
