@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Button, DatePicker, Select, message } from "antd";
 import {
@@ -15,7 +14,6 @@ import { useRouter } from "next/navigation";
 export default function HomePage() {
   const router = useRouter();
   const [stations, setStations] = useState<Station[]>([]);
-  // Đã xóa biến loading dư thừa
   const [departureId, setDepartureId] = useState<number | undefined>(undefined);
   const [destinationId, setDestinationId] = useState<number | undefined>(undefined);
   const [travelDate, setTravelDate] = useState<string | null>(null);
@@ -53,7 +51,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col w-full bg-white">
-      {/* 1. HERO SECTION */}
       <section className="relative w-full pt-16 pb-24 overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="flex-1 space-y-6 z-10">

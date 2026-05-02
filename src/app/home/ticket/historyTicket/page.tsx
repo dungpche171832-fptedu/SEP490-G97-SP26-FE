@@ -1,25 +1,21 @@
 // src/app/home/ticket/historyTicket/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SearchOutlined } from "@ant-design/icons";
 import { Spin } from "antd";
-import { getMyTickets } from "@/services/ticket.service";
+import { getMyTickets, type TicketInfo } from "@/services/ticket.service";
 
-// ============================================================================
-// ĐỊNH NGHĨA INTERFACE CHO VÉ LỊCH SỬ (THAY THẾ ANY)
-// ============================================================================
-export interface TicketHistoryItem {
-  id: number | string;
-  status?: string;
-  bookingCode?: string;
+interface TicketHistoryItem extends TicketInfo {
   code?: string;
   startStationName?: string;
   endStationName?: string;
-  startTime?: string;
-  seats?: string;
+  seats?: string | string[] | number[];
+  seatNumber?: string | number;
+  seatName?: string;
+  seatCode?: string;
+  seatNo?: string | number;
   createdAt?: string;
-  totalAmount?: number;
 }
 
 const TABS = [
@@ -29,42 +25,166 @@ const TABS = [
   { key: "CANCELLED", label: "Đã hủy" },
 ];
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isTicketHistoryItem = (value: unknown): value is TicketHistoryItem => {
+  if (!isRecord(value)) return false;
+
+  return typeof value.id === "number" || typeof value.id === "string";
+};
+
+const normalizeTicketList = (value: unknown): TicketHistoryItem[] => {
+  if (Array.isArray(value)) {
+    return value.filter(isTicketHistoryItem);
+  }
+
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  const possibleTicketLists = [value.tickets, value.result, value.data];
+
+  for (const ticketList of possibleTicketLists) {
+    if (Array.isArray(ticketList)) {
+      return ticketList.filter(isTicketHistoryItem);
+    }
+  }
+
+  return [];
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "Chưa cập nhật";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Chưa cập nhật";
+  }
+
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${hour}:${minute}:${second} ${day}/${month}/${year}`;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return "Chưa cập nhật";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Chưa cập nhật";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
+
+const formatMoney = (value?: number) => {
+  if (value === undefined || value === null) {
+    return "0đ";
+  }
+
+  return `${value.toLocaleString("vi-VN")}đ`;
+};
+
+const getBookingCode = (ticket: TicketHistoryItem) => {
+  return ticket.bookingCode || ticket.code || "Chưa cập nhật";
+};
+
+const getStartStation = (ticket: TicketHistoryItem) => {
+  return ticket.startStation || ticket.startStationName || "Chưa cập nhật";
+};
+
+const getEndStation = (ticket: TicketHistoryItem) => {
+  return ticket.endStation || ticket.endStationName || "Chưa cập nhật";
+};
+
+const getSeatText = (ticket: TicketHistoryItem) => {
+  const seatNumbers = ticket.seatNumbers as unknown;
+  const seats = ticket.seats as unknown;
+
+  if (Array.isArray(seatNumbers) && seatNumbers.length > 0) {
+    return seatNumbers.map(String).join(", ");
+  }
+
+  if (typeof seatNumbers === "string" && seatNumbers.trim() !== "") {
+    return seatNumbers;
+  }
+
+  if (Array.isArray(seats) && seats.length > 0) {
+    return seats.map(String).join(", ");
+  }
+
+  if (typeof seats === "string" && seats.trim() !== "") {
+    return seats;
+  }
+
+  if (ticket.seatNumber !== undefined && ticket.seatNumber !== null) {
+    return String(ticket.seatNumber);
+  }
+
+  if (ticket.seatName) {
+    return ticket.seatName;
+  }
+
+  if (ticket.seatCode) {
+    return ticket.seatCode;
+  }
+
+  return "-";
+};
+
+const getBookingDate = (ticket: TicketHistoryItem) => {
+  return ticket.bookingDate || ticket.createdAt;
+};
+
 export default function HistoryTicketPage() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Đã thay thế <any[]> bằng <TicketHistoryItem[]>
   const [tickets, setTickets] = useState<TicketHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Gọi API lấy vé
   useEffect(() => {
     const fetchTickets = async () => {
       setLoading(true);
+
       try {
-        const data = await getMyTickets();
-        // Ép kiểu mảng dữ liệu trả về thành mảng TicketHistoryItem
-        setTickets(data as TicketHistoryItem[]);
+        const data = (await getMyTickets()) as unknown;
+        const ticketList = normalizeTicketList(data);
+
+        setTickets(ticketList);
       } catch (error) {
         console.error("Lỗi lấy lịch sử vé:", error);
+        setTickets([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTickets();
   }, []);
 
-  // Logic Lọc vé theo Tab và Text Search
   const filteredTickets = tickets.filter((ticket) => {
     const status = ticket.status ? ticket.status.toUpperCase() : "";
-    const bookingCode = ticket.bookingCode || ticket.code || "";
+    const bookingCode = getBookingCode(ticket);
 
     const matchTab = activeTab === "ALL" || status === activeTab;
     const matchSearch = bookingCode.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchTab && matchSearch;
   });
 
-  // Hàm render UI cho từng Trạng thái (Màu sắc, Nút bấm)
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "BOOKED":
@@ -81,6 +201,7 @@ export default function HistoryTicketPage() {
             </button>
           ),
         };
+
       case "PENDING":
         return {
           badge: (
@@ -95,6 +216,7 @@ export default function HistoryTicketPage() {
             </button>
           ),
         };
+
       case "CANCELLED":
         return {
           badge: (
@@ -109,14 +231,18 @@ export default function HistoryTicketPage() {
             </button>
           ),
         };
+
       default:
-        return { badge: null, priceColor: "text-slate-800", button: null };
+        return {
+          badge: null,
+          priceColor: "text-slate-800",
+          button: null,
+        };
     }
   };
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] font-sans text-slate-900 pb-20">
-      {/* HEADER GIẢ LẬP (Nên dùng Component Header chung) */}
       <div className="bg-white border-b border-slate-200 px-6 py-8 md:px-20 mb-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
@@ -129,17 +255,17 @@ export default function HistoryTicketPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-20">
-        {/* TABS & SEARCH BAR */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100 w-full md:w-auto overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
+                style={activeTab === tab.key ? { color: "#ffffff" } : undefined}
                 className={`whitespace-nowrap px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all ${
                   activeTab === tab.key
-                    ? "bg-slate-800 text-white shadow-md"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                    ? "bg-[#1677FF] !text-white shadow-md shadow-blue-500/30"
+                    : "text-slate-500 hover:text-[#1677FF] hover:bg-blue-50"
                 }`}
               >
                 {tab.label}
@@ -153,13 +279,12 @@ export default function HistoryTicketPage() {
               type="text"
               placeholder="Tìm kiếm theo mã đơn hàng..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
             />
           </div>
         </div>
 
-        {/* DANH SÁCH VÉ (GRID) */}
         {loading ? (
           <div className="bg-white rounded-2xl p-20 text-center border border-slate-100 shadow-sm flex flex-col items-center">
             <Spin size="large" />
@@ -180,26 +305,28 @@ export default function HistoryTicketPage() {
             {filteredTickets.map((ticket) => {
               const status = ticket.status ? ticket.status.toUpperCase() : "PENDING";
               const config = getStatusConfig(status);
+              const bookingCode = getBookingCode(ticket);
+              const startStation = getStartStation(ticket);
+              const endStation = getEndStation(ticket);
+              const seatText = getSeatText(ticket);
+              const bookingDate = getBookingDate(ticket);
 
               return (
                 <div
                   key={ticket.id}
                   className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col"
                 >
-                  {/* Row 1: Header Card */}
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                         MÃ ĐƠN HÀNG
                       </p>
-                      <h3 className="text-lg font-black text-slate-800">
-                        #{ticket.bookingCode || ticket.code}
-                      </h3>
+                      <h3 className="text-lg font-black text-slate-800">#{bookingCode}</h3>
                     </div>
+
                     <div>{config.badge}</div>
                   </div>
 
-                  {/* Row 2: Route */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex-1 w-1/3">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
@@ -207,31 +334,27 @@ export default function HistoryTicketPage() {
                       </p>
                       <p
                         className="text-base font-bold text-slate-800 truncate"
-                        title={ticket.startStationName}
+                        title={startStation}
                       >
-                        {ticket.startStationName || "Chưa cập nhật"}
+                        {startStation}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-center justify-center px-4 flex-1">
                       <div className="bg-blue-50 text-blue-500 p-2 rounded-full mb-1">🚌</div>
-                      <div className="w-full border-t-2 border-dashed border-slate-200"></div>
+                      <div className="w-full border-t-2 border-dashed border-slate-200" />
                     </div>
 
                     <div className="flex-1 text-right w-1/3">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
                         ĐIỂM ĐẾN
                       </p>
-                      <p
-                        className="text-base font-bold text-slate-800 truncate"
-                        title={ticket.endStationName}
-                      >
-                        {ticket.endStationName || "Chưa cập nhật"}
+                      <p className="text-base font-bold text-slate-800 truncate" title={endStation}>
+                        {endStation}
                       </p>
                     </div>
                   </div>
 
-                  {/* Row 3: Time & Seat */}
                   <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
                     <div className="flex-1">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
@@ -241,32 +364,28 @@ export default function HistoryTicketPage() {
                         className="text-[12px] font-bold text-slate-800 truncate"
                         title={ticket.startTime}
                       >
-                        {ticket.startTime
-                          ? new Date(ticket.startTime).toLocaleString("vi-VN")
-                          : "Chưa cập nhật"}
+                        {formatDateTime(ticket.startTime)}
                       </p>
                     </div>
+
                     <div className="text-right">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                         VỊ TRÍ GHẾ
                       </p>
-                      <p className="text-[13px] font-bold text-slate-800">{ticket.seats || "-"}</p>
+                      <p className="text-[13px] font-bold text-slate-800">{seatText}</p>
                     </div>
                   </div>
 
-                  {/* Row 4: Footer */}
                   <div className="flex justify-between items-end border-t border-slate-100 pt-5 mt-auto">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 mb-1">
-                        Ngày đặt:{" "}
-                        {ticket.createdAt
-                          ? new Date(ticket.createdAt).toLocaleDateString("vi-VN")
-                          : "Chưa cập nhật"}
+                        Ngày đặt: {formatDate(bookingDate)}
                       </p>
                       <p className={`text-2xl font-black ${config.priceColor}`}>
-                        {(ticket.totalAmount || 0).toLocaleString("vi-VN")}đ
+                        {formatMoney(ticket.totalAmount)}
                       </p>
                     </div>
+
                     <div>{config.button}</div>
                   </div>
                 </div>

@@ -6,8 +6,77 @@ import { login, register } from "@/lib/auth/auth.service";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+type LoginTab = "login" | "register";
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const normalizeRole = (value: unknown) => {
+  if (typeof value !== "string") return "";
+
+  return value.replace("ROLE_", "").toLowerCase();
+};
+
+const parseRoleId = (value: unknown): number | undefined => {
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsedValue = Number(value);
+
+    return Number.isNaN(parsedValue) ? undefined : parsedValue;
+  }
+
+  return undefined;
+};
+
+const getRoleIdFromUser = (user: unknown): number | undefined => {
+  if (!isRecord(user)) return undefined;
+
+  return parseRoleId(user.roleId) || parseRoleId(user.roleID) || parseRoleId(user.role_id);
+};
+
+const getRedirectPathAfterLogin = (user: unknown): string | null => {
+  if (!isRecord(user)) return null;
+
+  const role = normalizeRole(user.role);
+  const roleId = getRoleIdFromUser(user);
+
+  if (role === "customer") {
+    return "/home";
+  }
+
+  if (role === "admin") {
+    return "/admin/employees";
+  }
+
+  if (role === "manager") {
+    return "/admin/branch";
+  }
+
+  if (role === "staff") {
+    return "/staff";
+  }
+
+  return null;
+};
+
+const getUserRoleText = (user: unknown) => {
+  if (!isRecord(user)) return "không xác định";
+
+  const role = typeof user.role === "string" ? user.role : "";
+  const roleId = getRoleIdFromUser(user);
+
+  if (role) return role;
+  if (roleId !== undefined) return `roleId ${roleId}`;
+
+  return "không xác định";
+};
+
 export default function AuthPage() {
-  const [tab, setTab] = useState<"login" | "register">("login");
+  const [tab, setTab] = useState<LoginTab>("login");
 
   return (
     <div className="min-h-[100vh] bg-[#F1F5F9] flex flex-col items-center justify-center p-4 text-black">
@@ -54,6 +123,7 @@ export default function AuthPage() {
           >
             Đăng nhập
           </button>
+
           <button
             onClick={() => setTab("register")}
             className={`flex-1 py-3 transition-colors ${
@@ -78,7 +148,7 @@ function Input({
   type = "text",
   value,
   onChange,
-  autoComplete, // Thêm prop này để trình duyệt hỗ trợ tốt hơn
+  autoComplete,
 }: {
   label: string;
   placeholder: string;
@@ -111,7 +181,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); // Ngăn trình duyệt reload trang
+    e.preventDefault();
     setError("");
 
     if (!email.trim()) {
@@ -128,35 +198,21 @@ function LoginForm() {
 
     try {
       const res = await login({ email, password });
-      const role = res.user.role?.toLowerCase();
+      const redirectPath = getRedirectPathAfterLogin(res.user);
 
-      if (role === "customer") {
-        router.push("/home");
+      if (redirectPath) {
+        router.replace(redirectPath);
         return;
       }
 
-      if (role === "admin") {
-        router.push("/admin/employees");
-        return;
-      }
-
-      if (role === "staff") {
-        router.push("/staff");
-        return;
-      }
-
-      if (role === "manager") {
-        router.push("/admin/branch");
-        return;
-      }
-
-      setError(`Role không hợp lệ: ${res.user.role}`);
+      setError(`Role không hợp lệ: ${getUserRoleText(res.user)}`);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Đăng nhập thất bại");
       }
+
       setPassword("");
     } finally {
       setLoading(false);
@@ -215,6 +271,7 @@ function RegisterForm() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       const res = await register({ fullName, email, phone, password });
       alert(res.message || "Đăng ký thành công");

@@ -19,7 +19,7 @@ import {
 import { planService } from "@/services/planService";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Car } from "@/services/carService";
+import type { Car } from "@/model/car";
 
 // --- Interfaces để tránh lỗi 'any' ---
 interface Station {
@@ -34,7 +34,7 @@ interface Station {
 }
 
 interface Seat {
-  id: number;
+  id?: number;
   seatId: number;
   seatNumber: string;
   status: string;
@@ -43,9 +43,9 @@ interface Seat {
 interface PlanData {
   id: number;
   code: string;
-  startStation: Station;
+  startStation?: Station;
   start_station?: Station;
-  endStations: Station[];
+  endStations?: Station[];
   end_stations?: Station[];
   car?: Car & {
     branch?: {
@@ -98,6 +98,7 @@ function AddTicketContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = Number(searchParams.get("planId") || 0);
+  const loginPath = "/login";
 
   const [planDetail, setPlanDetail] = useState<PlanData | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
@@ -109,9 +110,7 @@ function AddTicketContent() {
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [branchImage, setBranchImage] = useState<string>(
-    "https://png.pngtree.com/png-clipart/20250427/original/pngtree-3d-qr-code-icon-isolated-on-transparent-background-png-image_20875047.png",
-  );
+  const [branchImage, setBranchImage] = useState<string>("/images/QR.png");
   const [isFetchingImage, setIsFetchingImage] = useState(false);
 
   useEffect(() => {
@@ -127,7 +126,8 @@ function AddTicketContent() {
         setPlanDetail(res);
         const endStations = res?.endStations || res?.end_stations || [];
         if (endStations.length > 0) {
-          setSelectedDropOff(endStations[0].id || endStations[0].stationId);
+          const firstDropOffId = endStations[0].id ?? endStations[0].stationId ?? null;
+          setSelectedDropOff(firstDropOffId);
         }
       } catch {
         message.error("Lỗi kết nối dữ liệu chuyến xe.");
@@ -198,6 +198,16 @@ function AddTicketContent() {
   const handleShowPaymentModal = async () => {
     if (selectedSeats.length === 0) {
       message.warning("Vui lòng chọn chỗ ngồi trước khi đặt!");
+      return;
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      message.warning("Vui lòng đăng nhập để thanh toán vé.");
+
+      const currentTicketUrl = `/home/ticket?${searchParams.toString()}`;
+      router.push(`${loginPath}?redirect=${encodeURIComponent(currentTicketUrl)}`);
       return;
     }
 
@@ -277,8 +287,8 @@ function AddTicketContent() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-              <span className="p-2 bg-blue-600 text-white rounded-lg text-sm">BUS</span>
-              ĐẶT VÉ {carInfo?.description || carInfo?.carType || "LIMOUSINE"}
+              <span className="p-2 bg-blue-600 text-white rounded-lg text-sm">CAR</span>
+              ĐẶT VÉ LIMOUSINE
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Lịch trình: <span className="text-blue-600 font-bold">{planDetail?.code}</span>
