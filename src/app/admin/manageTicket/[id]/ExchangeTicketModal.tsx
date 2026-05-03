@@ -31,8 +31,7 @@ interface ExchangeTicketModalProps {
 interface PlanSummary {
   id: number;
   code: string;
-  startTime?: string;
-  [key: string]: unknown;
+  startTime?: string | null;
 }
 
 interface ApiError {

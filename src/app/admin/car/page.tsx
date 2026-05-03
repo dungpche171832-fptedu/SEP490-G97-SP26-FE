@@ -16,13 +16,19 @@ import {
 import type { Car } from "@/model/car";
 import { getCars, getBranchesForSelect, Branch } from "@/services/carService";
 
-// 🔴 Hàm mô phỏng lấy thông tin User đang đăng nhập.
-// Duy cần thay thế logic này bằng Context hoặc Redux để lấy user thật sau login.
-const getCurrentUser = () => {
+// ✅ Đã định nghĩa Type rõ ràng để loại bỏ lỗi 'any' từ JSON.parse
+type CurrentUser = {
+  role: string;
+  branchId: number;
+  branchName: string;
+};
+
+const getCurrentUser = (): CurrentUser | null => {
   if (typeof window !== "undefined") {
     const user = localStorage.getItem("user");
-    // Giả lập mặc định là ADMIN nếu không có data. Đổi thành MANAGER_BRANCH để test role kia.
-    return user ? JSON.parse(user) : { role: "ADMIN", branchId: 1, branchName: "Hà Nội" };
+    return user
+      ? (JSON.parse(user) as CurrentUser)
+      : { role: "ADMIN", branchId: 1, branchName: "Hà Nội" };
   }
   return null;
 };
@@ -33,12 +39,10 @@ export default function CarManagementPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lấy Role từ User
   const user = getCurrentUser();
   const isAdmin = user?.role === "ADMIN";
   const isManager = user?.role === "MANAGER_BRANCH";
 
-  // Pagination & Filter States
   const [searchText, setSearchText] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState<number | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,11 +56,11 @@ export default function CarManagementPage() {
         setCars(carsData.cars || []);
         setBranches(branchesData || []);
 
-        // Tự động set chi nhánh nếu là Manager
         if (isManager && user?.branchId) {
           setSelectedBranchId(user.branchId);
         }
-      } catch (err) {
+      } catch (err: unknown) {
+        // ✅ Thêm 'unknown' để tránh lỗi implicit any
         console.error(err);
         setError("Không thể tải dữ liệu");
       } finally {
@@ -66,12 +70,9 @@ export default function CarManagementPage() {
     fetchData();
   }, [isManager, user?.branchId]);
 
-  // ✅ LOGIC LỌC KẾT HỢP: Biển số xe + Chi nhánh (Phân quyền)
   const filteredCars = cars.filter((c) => {
     const matchSearch = c.licensePlate.toLowerCase().includes(searchText.toLowerCase());
 
-    // Nếu Manager: Bắt buộc branch.id phải bằng branchId của Manager
-    // Nếu Admin: Có thể chọn "all" hoặc theo dropdown
     const matchBranch = isManager
       ? c.branch?.id === user?.branchId
       : selectedBranchId === "all" || c.branch?.id === selectedBranchId;
@@ -79,7 +80,6 @@ export default function CarManagementPage() {
     return matchSearch && matchBranch;
   });
 
-  // Phân trang
   const totalPages = Math.ceil(filteredCars.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentCars = filteredCars.slice(startIndex, startIndex + itemsPerPage);
@@ -91,7 +91,6 @@ export default function CarManagementPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] px-6 py-6 font-sans text-slate-900">
       <div className="w-full">
-        {/* HEADER SECTION */}
         <div className="flex justify-between items-end mb-6">
           <div>
             <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
@@ -104,7 +103,6 @@ export default function CarManagementPage() {
             </p>
           </div>
 
-          {/* ✅ Cập nhật: Cả Manager và Admin đều thấy nút Thêm xe */}
           {(isManager || isAdmin) && (
             <Link href="/admin/car/add">
               <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
@@ -126,7 +124,6 @@ export default function CarManagementPage() {
             />
           </div>
 
-          {/* Chỉ Admin mới thấy bộ lọc Chi nhánh */}
           {isAdmin && (
             <div className="relative min-w-[220px]">
               <select
@@ -148,7 +145,6 @@ export default function CarManagementPage() {
           )}
         </div>
 
-        {/* MAIN CONTENT */}
         {loading && (
           <div className="p-20 text-center flex flex-col items-center gap-4">
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -161,7 +157,6 @@ export default function CarManagementPage() {
             {filteredCars.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {currentCars.map((car) => (
-                  // Truyền userRole xuống Card để xử lý nút Sửa/Xóa
                   <CarCard key={car.id} car={car} userRole={user?.role} />
                 ))}
               </div>
@@ -171,7 +166,6 @@ export default function CarManagementPage() {
               </div>
             )}
 
-            {/* PAGINATION */}
             {filteredCars.length > 0 && (
               <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                 <p className="text-xs text-slate-600 font-bold">
@@ -243,7 +237,6 @@ export default function CarManagementPage() {
   );
 }
 
-// Component CarCard nhận prop userRole
 function CarCard({ car, userRole }: { car: Car; userRole?: string }) {
   const formatPlate = (plate: string) => {
     if (!plate) return "—";
@@ -254,12 +247,17 @@ function CarCard({ car, userRole }: { car: Car; userRole?: string }) {
     return plate;
   };
 
-  const getCoverImage = (type: string) => {
-    const carType = type ? type.toUpperCase() : "";
-    if (carType.includes("LIMO")) return "/images/bus3.png";
-    if (carType.includes("SLEEPER")) return "/images/bus3.png";
-    if (carType.includes("SEAT")) return "/images/bus3.png";
-    return "/images/bus3.png";
+  // ✅ Đã cập nhật logic load ảnh fix cứng dựa vào số ghế/loại xe
+  const getCoverImage = (type?: string): string => {
+    if (!type) return "/images/bus3.png"; // Fallback
+    const carType = type.toUpperCase();
+
+    // So khớp chuỗi carType chứa số tương ứng
+    if (carType.includes("9")) return "/images/Car_9.jpg";
+    if (carType.includes("16")) return "/images/Car_16.jpg";
+    if (carType.includes("45")) return "/images/Car_45.jpg";
+
+    return "/images/bus3.png"; // Ảnh mặc định nếu không khớp
   };
 
   const coverImage = getCoverImage(car.carType);
