@@ -18,6 +18,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { RouteResponse, RouteStation, UpdateRoutePayload } from "@/model/route";
 import { getRouteDetail, getRoutes, updateRoute } from "@/services/routeService";
 import { getStations, type Station } from "@/services/station.service";
+import { getRole } from "@/lib/auth/auth.service";
 
 type StationType = "departure" | "waypoint" | "arrival";
 
@@ -49,6 +50,10 @@ const getStationLabel = (type: StationType): string => {
   }
 
   return "ĐIỂM TRUNG CHUYỂN (WAY)";
+};
+
+const normalizeRole = (role?: string | null): string => {
+  return role?.replace("ROLE_", "").toLowerCase() || "";
 };
 
 const toEditableStations = (stations: RouteStation[]): EditableRouteStation[] => {
@@ -84,6 +89,8 @@ export default function ManageRouteDetailPage() {
   const [saving, setSaving] = useState(false);
 
   const routeId = useMemo(() => Number(params.id), [params.id]);
+  const currentRole = normalizeRole(getRole());
+  const canEditRoute = currentRole === "admin" || currentRole === "manager";
 
   const stationCount = isEditing ? editableStations.length : routeDetail?.stations.length || 0;
 
@@ -147,6 +154,11 @@ export default function ManageRouteDetailPage() {
   }, []);
 
   const handleStartEdit = () => {
+    if (!canEditRoute) {
+      message.error("Bạn không có quyền chỉnh sửa tuyến đường");
+      return;
+    }
+
     if (!routeDetail) {
       return;
     }
@@ -169,6 +181,11 @@ export default function ManageRouteDetailPage() {
   };
 
   const handleAddStation = () => {
+    if (!canEditRoute) {
+      message.error("Bạn không có quyền chỉnh sửa tuyến đường");
+      return;
+    }
+
     if (!selectedStationId) {
       message.error("Vui lòng chọn điểm dừng cần thêm");
       return;
@@ -206,6 +223,11 @@ export default function ManageRouteDetailPage() {
   };
 
   const handleRemoveStation = (stationId: number) => {
+    if (!canEditRoute) {
+      message.error("Bạn không có quyền chỉnh sửa tuyến đường");
+      return;
+    }
+
     setEditableStations((currentStations) =>
       currentStations
         .filter((station) => station.stationId !== stationId)
@@ -217,6 +239,11 @@ export default function ManageRouteDetailPage() {
   };
 
   const handleMoveStation = (index: number, direction: "up" | "down") => {
+    if (!canEditRoute) {
+      message.error("Bạn không có quyền chỉnh sửa tuyến đường");
+      return;
+    }
+
     setEditableStations((currentStations) => {
       const nextIndex = direction === "up" ? index - 1 : index + 1;
 
@@ -243,6 +270,11 @@ export default function ManageRouteDetailPage() {
   };
 
   const handleSaveRoute = async () => {
+    if (!canEditRoute) {
+      message.error("Bạn không có quyền chỉnh sửa tuyến đường");
+      return;
+    }
+
     if (!routeDetail) {
       return;
     }
@@ -344,7 +376,7 @@ export default function ManageRouteDetailPage() {
               </h1>
             </div>
 
-            {!isEditing ? (
+            {!isEditing && canEditRoute ? (
               <Button
                 type="default"
                 icon={<EditOutlined />}
@@ -357,7 +389,7 @@ export default function ManageRouteDetailPage() {
               >
                 Chỉnh Sửa
               </Button>
-            ) : (
+            ) : isEditing ? (
               <div className="flex flex-wrap gap-3">
                 <Button
                   icon={<CloseOutlined />}
@@ -378,7 +410,7 @@ export default function ManageRouteDetailPage() {
                   Lưu
                 </Button>
               </div>
-            )}
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-5">

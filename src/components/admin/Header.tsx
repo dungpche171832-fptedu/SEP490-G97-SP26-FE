@@ -4,9 +4,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
+  const words = name.trim().split(/\s+/).filter(Boolean);
 
-  if (words.length === 0) return "U";
+  if (words.length === 0) {
+    return "U";
+  }
 
   if (words.length === 1) {
     return words[0].charAt(0).toUpperCase();
@@ -57,32 +59,33 @@ export default function Header() {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("roleId");
+    localStorage.removeItem("role");
     localStorage.removeItem("fullName");
 
     window.location.href = "/login";
   };
 
   const dropdownItemClass =
-    "flex h-12 w-full items-center px-5 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors";
+    "flex h-12 w-full items-center px-5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100";
 
   return (
-    <header className="fixed top-0 left-64 right-0 z-10 h-16 bg-white border-b border-slate-200 flex items-center justify-end px-8">
-      <div className="flex h-8 items-center gap-3">
-        <div className="h-8 flex items-center">
-          <p className="text-sm font-bold leading-none text-slate-900">{fullName}</p>
-        </div>
+    <header className="fixed left-64 right-0 top-0 z-10 flex h-16 items-center justify-end border-b border-slate-200 bg-white px-8">
+      <div className="flex h-10 items-center gap-3">
+        <p className="m-0 flex h-10 items-center text-sm font-bold leading-none text-slate-900">
+          {fullName}
+        </p>
 
-        <div ref={dropdownRef} className="relative h-8 flex items-center">
+        <div ref={dropdownRef} className="relative flex h-10 items-center">
           <button
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-semibold leading-none flex items-center justify-center shadow-sm hover:bg-blue-700 transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-bold leading-none !text-white shadow-sm transition-colors hover:bg-blue-700"
           >
             {initials}
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 top-11 w-52 overflow-hidden bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-50">
+            <div className="absolute right-0 top-12 z-50 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-2 shadow-lg">
               <Link
                 href="/home/profile"
                 onClick={() => setIsDropdownOpen(false)}

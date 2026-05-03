@@ -157,6 +157,38 @@ function getBusinessErrorMessage(data: unknown): string | null {
   return null;
 }
 
+async function handlePlanActionResponse(
+  response: Response,
+  fallbackMessage: string,
+): Promise<string> {
+  const responseText = await response.text();
+  const data = parseResponseBody(responseText);
+
+  const businessErrorMessage = getBusinessErrorMessage(data);
+
+  if (businessErrorMessage) {
+    throw new Error(businessErrorMessage);
+  }
+
+  if (!response.ok) {
+    throw new Error(responseText || `${fallbackMessage}: ${response.status}`);
+  }
+
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (isRecord(data)) {
+    const message = getStringValue(data, ["message", "errorMessage", "detail"]);
+
+    if (message) {
+      return message;
+    }
+  }
+
+  return responseText || fallbackMessage;
+}
+
 export const planService = {
   getListPlans: async (): Promise<PlanResponse> => {
     const headers = getAuthHeaders();
@@ -216,13 +248,17 @@ export const planService = {
 
     const url = new URL("http://localhost:8080/api/plans");
 
-    if (params.departureStationId)
+    if (params.departureStationId) {
       url.searchParams.append("departureStationId", params.departureStationId.toString());
+    }
 
-    if (params.destinationStationId)
+    if (params.destinationStationId) {
       url.searchParams.append("destinationStationId", params.destinationStationId.toString());
+    }
 
-    if (params.startTime) url.searchParams.append("startTime", params.startTime);
+    if (params.startTime) {
+      url.searchParams.append("startTime", params.startTime);
+    }
 
     url.searchParams.append("status", params.status || "ACTIVE");
 
@@ -234,7 +270,13 @@ export const planService = {
     if (!response.ok) {
       const errorText = await response.text();
 
-      if (response.status === 404) return { plans: [], totalCount: 0, message: "Không tìm thấy" };
+      if (response.status === 404) {
+        return {
+          plans: [],
+          totalCount: 0,
+          message: "Không tìm thấy",
+        };
+      }
 
       throw new Error(errorText || "Lỗi khi tìm kiếm lịch trình");
     }
@@ -336,19 +378,7 @@ export const planService = {
       throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
     }
 
-    if (!response.ok) {
-      const errorMessage = await getErrorMessage(response, "Không đổi được tài xế");
-
-      console.error(
-        `PUT /api/plans/${planId}/change-driver failed:`,
-        response.status,
-        errorMessage,
-      );
-
-      throw new Error(errorMessage);
-    }
-
-    return await response.text();
+    return handlePlanActionResponse(response, "Không đổi được tài xế");
   },
 
   changeCar: async (planId: string | number, payload: ChangeCarPayload): Promise<string> => {
@@ -362,15 +392,7 @@ export const planService = {
       throw new Error("Phiên đăng nhập hết hạn hoặc không có quyền.");
     }
 
-    if (!response.ok) {
-      const errorMessage = await getErrorMessage(response, "Không đổi được xe");
-
-      console.error(`PUT /api/plans/${planId}/change-car failed:`, response.status, errorMessage);
-
-      throw new Error(errorMessage);
-    }
-
-    return await response.text();
+    return handlePlanActionResponse(response, "Không đổi được xe");
   },
 
   getPlanByIdForTicket: async (id: number | string): Promise<PlanDetailForTicket> => {
