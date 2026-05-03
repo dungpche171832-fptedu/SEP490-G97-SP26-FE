@@ -20,10 +20,10 @@ type TicketStatusFilter = "ALL" | "PENDING" | "COMPLETED" | "CANCELLED" | "BOOKE
 
 const STATUS_FILTER_OPTIONS: { label: string; value: TicketStatusFilter }[] = [
   { label: "Tất cả", value: "ALL" },
-  { label: "PENDING", value: "PENDING" },
-  { label: "COMPLETED", value: "COMPLETED" },
-  { label: "CANCELLED", value: "CANCELLED" },
-  { label: "BOOKED", value: "BOOKED" },
+  { label: "Chờ xử lý", value: "PENDING" },
+  { label: "Hoàn thành", value: "COMPLETED" },
+  { label: "Hủy", value: "CANCELLED" },
+  { label: "Đã đặt", value: "BOOKED" },
 ];
 
 const TicketManagementPage = () => {
@@ -237,10 +237,10 @@ const TicketManagementPage = () => {
                       ticket.status,
                     )}`}
                   >
-                    <option value="PENDING">PENDING</option>
-                    <option value="COMPLETED">COMPLETED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                    <option value="BOOKED">BOOKED</option>
+                    <option value="PENDING">Chờ xử lý</option>
+                    <option value="COMPLETED">Hoàn thành</option>
+                    <option value="CANCELLED">Hủy</option>
+                    <option value="BOOKED">Đã đặt</option>
                   </select>
 
                   <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 opacity-50" />

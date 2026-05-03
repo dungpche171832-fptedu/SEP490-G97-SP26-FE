@@ -25,6 +25,15 @@ export default function AddNewsForm({ onCancel, onSuccess }: AddNewsFormProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -38,14 +47,14 @@ export default function AddNewsForm({ onCancel, onSuccess }: AddNewsFormProps) {
     const files = e.target.files;
     if (files && files[0]) {
       try {
-        const url = await newsService.uploadImage(files[0]);
-        setFormData((prev) => ({ ...prev, imageUrl: url }));
+        // Chuyển đổi file thành chuỗi base64 string
+        const base64String = await convertToBase64(files[0]);
+
+        // Cập nhật vào form data
+        setFormData((prev) => ({ ...prev, imageUrl: base64String }));
+        setError(null);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Lỗi khi tải ảnh lên");
-        }
+        setError("Lỗi khi chuyển đổi ảnh");
       }
     }
   };

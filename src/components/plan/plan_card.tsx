@@ -73,7 +73,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
               {start.time} - {start.day}
             </span>
           </div>
-          <span className="font-bold text-slate-500">3h</span>
         </div>
 
         <button

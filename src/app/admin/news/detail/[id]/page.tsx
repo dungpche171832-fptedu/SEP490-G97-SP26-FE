@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, X, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Save, X, Trash2, Upload } from "lucide-react";
 import { NewsPayload } from "@/model/news";
 import { newsService } from "@/services/newsService";
 import { useRouter, useParams } from "next/navigation";
@@ -24,6 +24,7 @@ export default function NewsDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!newsId || isNaN(newsId)) return;
@@ -55,6 +56,28 @@ export default function NewsDetailPage() {
 
   const handleToggle = () => {
     setFormData((prev) => ({ ...prev, isActive: !prev.isActive }));
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      try {
+        const base64String = await convertToBase64(files[0]);
+        setFormData((prev) => ({ ...prev, imageUrl: base64String }));
+        setError(null);
+      } catch (err) {
+        setError("Lỗi khi chuyển đổi ảnh");
+      }
+    }
   };
 
   const getFormattedTimestamp = (value?: string): string => {
@@ -188,8 +211,23 @@ export default function NewsDetailPage() {
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Ảnh đại diện</label>
 
-              <div className="text-xs text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                Không cho phép thay đổi ảnh đại diện trong chế độ này.
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50/30 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50/80 mb-4"
+              >
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl mb-4">
+                  <Upload size={24} />
+                </div>
+                <span className="text-sm font-medium text-gray-900">Click để tải ảnh lên</span>
+                <span className="text-xs text-gray-400 mt-1">PNG, JPG hoặc GIF (tối đa 5MB)</span>
               </div>
 
               {formData.imageUrl && (
@@ -201,6 +239,18 @@ export default function NewsDetailPage() {
                   />
                 </div>
               )}
+
+              <div className="mt-4">
+                <label className="text-xs text-gray-500">Hoặc nhập URL hình ảnh:</label>
+                <input
+                  type="text"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">

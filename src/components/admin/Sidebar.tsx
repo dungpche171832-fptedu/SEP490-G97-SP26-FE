@@ -11,6 +11,7 @@ import {
   CarOutlined,
   DollarCircleOutlined,
   FlagOutlined,
+  ReadFilled,
 } from "@ant-design/icons";
 
 const NavItem = ({
@@ -110,6 +111,12 @@ export default function Sidebar() {
           label="Giá tiền"
           href="/admin/rules"
           active={pathname?.startsWith("/admin/rules")}
+        />
+        <NavItem
+          icon={<ReadFilled />}
+          label="Tin tức"
+          href="/admin/news"
+          active={pathname?.startsWith("/admin/news")}
         />
       </nav>
     </aside>
