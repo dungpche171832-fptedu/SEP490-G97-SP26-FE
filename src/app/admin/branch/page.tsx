@@ -15,8 +15,8 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 
-import Header from "@/components/admin/Header";
-import Sidebar from "@/components/admin/Sidebar";
+// import Header from "@/components/admin/Header";
+// import Sidebar from "@/components/admin/Sidebar";
 import { getAllBranches, type Branch } from "@/services/branch.service";
 
 export default function BranchPage() {
@@ -63,134 +63,128 @@ export default function BranchPage() {
   }, [searchText]);
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-900">
-      <Sidebar />
-
-      <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
-        <Header />
-
-        <div className="p-8 h-full overflow-y-auto">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
-                DANH SÁCH CHI NHÁNH
-              </h2>
-              <p className="text-slate-500 mt-1 text-[14px] font-medium">
-                Quản lý mạng lưới văn phòng và điểm đón khách trên toàn quốc
-              </p>
-            </div>
-
-            {/* Chỉ ADMIN mới thấy nút Thêm chi nhánh */}
-            {userRole === "ADMIN" && (
-              <Link href="/admin/branch/add">
-                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                  <PlusOutlined /> Thêm chi nhánh
-                </button>
-              </Link>
-            )}
+    <main className="min-h-screen bg-[#F8FAFC] px-6 py-6 font-sans text-slate-900">
+      <div className="w-full">
+        <div className="flex justify-between items-end mb-8">
+          <div>
+            <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
+              DANH SÁCH CHI NHÁNH
+            </h2>
+            <p className="text-slate-500 mt-1 text-[14px] font-medium">
+              Quản lý mạng lưới văn phòng và điểm đón khách trên toàn quốc
+            </p>
           </div>
 
-          {/* FILTER BAR */}
-          <div className="flex items-center gap-0 bg-white rounded-xl border border-slate-300 w-max mb-8 shadow-sm overflow-hidden">
-            <button className="flex items-center gap-2 px-5 py-2.5 border-r border-slate-200 text-sm font-bold text-slate-900 hover:bg-slate-50 transition-colors">
-              Tên chi nhánh <DownOutlined className="text-[10px] text-slate-400" />
-            </button>
-            <div className="relative w-[320px]">
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="w-full py-2.5 pl-4 pr-10 text-sm outline-none bg-transparent text-slate-900 font-bold placeholder:text-slate-400 placeholder:font-medium"
-              />
-              <SearchOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold" />
-            </div>
-          </div>
-
-          {!loading && !error && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                {currentBranches.length > 0 ? (
-                  currentBranches.map((branch) => (
-                    <BranchCard key={branch.id} branch={branch} userRole={userRole} />
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center text-slate-500 font-bold bg-white rounded-2xl border border-slate-200 shadow-sm">
-                    Không tìm thấy chi nhánh nào phù hợp với &quot;{searchText}&quot;.
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredBranches.length > 0 && (
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <p className="text-xs text-slate-600 font-bold">
-                    Hiển thị {startIndex + 1}-
-                    {Math.min(startIndex + itemsPerPage, filteredBranches.length)} trong tổng số{" "}
-                    {filteredBranches.length} chi nhánh
-                  </p>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((prev) => prev - 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M15 18l-6-6 6-6" />
-                      </svg>
-                    </button>
-                    {[...Array(totalPages)].map((_, index) => {
-                      const page = index + 1;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs transition-all ${
-                            currentPage === page
-                              ? "bg-[#1677FF] text-white shadow-md shadow-blue-200"
-                              : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
-                    <button
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      onClick={() => setCurrentPage((prev) => prev + 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+          {/* Chỉ ADMIN mới thấy nút Thêm chi nhánh */}
+          {userRole === "ADMIN" && (
+            <Link href="/admin/branch/add">
+              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                <PlusOutlined /> Thêm chi nhánh
+              </button>
+            </Link>
           )}
         </div>
-      </main>
-    </div>
+
+        {/* FILTER BAR */}
+        <div className="flex items-center gap-0 bg-white rounded-xl border border-slate-300 w-max mb-8 shadow-sm overflow-hidden">
+          <button className="flex items-center gap-2 px-5 py-2.5 border-r border-slate-200 text-sm font-bold text-slate-900 hover:bg-slate-50 transition-colors">
+            Tên chi nhánh <DownOutlined className="text-[10px] text-slate-400" />
+          </button>
+          <div className="relative w-[320px]">
+            <input
+              type="text"
+              placeholder="Tìm kiếm..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full py-2.5 pl-4 pr-10 text-sm outline-none bg-transparent text-slate-900 font-bold placeholder:text-slate-400 placeholder:font-medium"
+            />
+            <SearchOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold" />
+          </div>
+        </div>
+
+        {!loading && !error && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {currentBranches.length > 0 ? (
+                currentBranches.map((branch) => (
+                  <BranchCard key={branch.id} branch={branch} userRole={userRole} />
+                ))
+              ) : (
+                <div className="col-span-full py-20 text-center text-slate-500 font-bold bg-white rounded-2xl border border-slate-200 shadow-sm">
+                  Không tìm thấy chi nhánh nào phù hợp với &quot;{searchText}&quot;.
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {filteredBranches.length > 0 && (
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                <p className="text-xs text-slate-600 font-bold">
+                  Hiển thị {startIndex + 1}-
+                  {Math.min(startIndex + itemsPerPage, filteredBranches.length)} trong tổng số{" "}
+                  {filteredBranches.length} chi nhánh
+                </p>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const page = index + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs transition-all ${
+                          currentPage === page
+                            ? "bg-[#1677FF] text-white shadow-md shadow-blue-200"
+                            : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  <button
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
   );
 }
 

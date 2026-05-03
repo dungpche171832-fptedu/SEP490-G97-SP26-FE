@@ -13,8 +13,8 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 
-import Sidebar from "@/components/admin/Sidebar";
-import Header from "@/components/admin/Header";
+// import Sidebar from "@/components/admin/Sidebar";
+// import Header from "@/components/admin/Header";
 import { getCars, getBranchesForSelect, Car, Branch } from "@/services/carService";
 
 // 🔴 Hàm mô phỏng lấy thông tin User đang đăng nhập.
@@ -90,163 +90,157 @@ export default function CarManagementPage() {
   }, [searchText, selectedBranchId]);
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-900">
-      <Sidebar />
-
-      <main className="flex-1 flex flex-col ml-64 overflow-hidden pt-16">
-        <Header />
-
-        <div className="p-8 h-full overflow-y-auto">
-          {/* HEADER SECTION */}
-          <div className="flex justify-between items-end mb-6">
-            <div>
-              <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
-                DANH SÁCH XE {isManager && `- CHI NHÁNH ${user?.branchName}`}
-              </h2>
-              <p className="text-slate-500 mt-1 text-[14px]">
-                {isAdmin
-                  ? "Giám sát đội xe toàn hệ thống."
-                  : "Quản lý đội xe và trạng thái vận hành chi nhánh."}
-              </p>
-            </div>
-
-            {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Thêm xe */}
-            {isManager && (
-              <Link href="/admin/car/add">
-                <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
-                  <PlusOutlined /> Thêm xe
-                </button>
-              </Link>
-            )}
+    <main className="min-h-screen bg-[#F8FAFC] px-6 py-6 font-sans text-slate-900">
+      <div className="w-full">
+        {/* HEADER SECTION */}
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <h2 className="text-3xl font-black text-[#1E293B] uppercase tracking-tight">
+              DANH SÁCH XE {isManager && `- CHI NHÁNH ${user?.branchName}`}
+            </h2>
+            <p className="text-slate-500 mt-1 text-[14px]">
+              {isAdmin
+                ? "Giám sát đội xe toàn hệ thống."
+                : "Quản lý đội xe và trạng thái vận hành chi nhánh."}
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 mb-8">
-            <div className="relative w-[400px]">
-              <SearchOutlined className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 z-10" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo biển số xe..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
-              />
-            </div>
-
-            {/* ✅ PHÂN QUYỀN: Chỉ Admin mới thấy bộ lọc Chi nhánh */}
-            {isAdmin && (
-              <div className="relative min-w-[220px]">
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) =>
-                    setSelectedBranchId(e.target.value === "all" ? "all" : Number(e.target.value))
-                  }
-                  className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm cursor-pointer pr-10"
-                >
-                  <option value="all">Tất cả chi nhánh</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <DownOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] pointer-events-none" />
-              </div>
-            )}
-          </div>
-
-          {/* MAIN CONTENT */}
-          {loading && (
-            <div className="p-20 text-center flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-slate-600 font-bold">Đang tải dữ liệu xe...</p>
-            </div>
-          )}
-
-          {!loading && !error && (
-            <>
-              {filteredCars.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                  {currentCars.map((car) => (
-                    // ✅ Truyền userRole xuống Card để xử lý nút Sửa/Xóa
-                    <CarCard key={car.id} car={car} userRole={user?.role} />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 p-20 text-center text-slate-600 font-bold shadow-sm">
-                  Không tìm thấy xe nào phù hợp với yêu cầu.
-                </div>
-              )}
-
-              {/* PAGINATION */}
-              {filteredCars.length > 0 && (
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <p className="text-xs text-slate-600 font-bold">
-                    Hiển thị {startIndex + 1}-
-                    {Math.min(startIndex + itemsPerPage, filteredCars.length)} trong tổng số{" "}
-                    {filteredCars.length} xe
-                  </p>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((prev) => prev - 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M15 18l-6-6 6-6" />
-                      </svg>
-                    </button>
-                    {[...Array(totalPages)].map((_, index) => {
-                      const page = index + 1;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs transition-all ${
-                            currentPage === page
-                              ? "bg-[#1677FF] text-white shadow-md shadow-blue-200"
-                              : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
-                    <button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((prev) => prev + 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+          {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Thêm xe */}
+          {isManager && (
+            <Link href="/admin/car/add">
+              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+                <PlusOutlined /> Thêm xe
+              </button>
+            </Link>
           )}
         </div>
-      </main>
-    </div>
+
+        <div className="flex items-center gap-4 mb-8">
+          <div className="relative w-[400px]">
+            <SearchOutlined className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 z-10" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo biển số xe..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+            />
+          </div>
+
+          {/* ✅ PHÂN QUYỀN: Chỉ Admin mới thấy bộ lọc Chi nhánh */}
+          {isAdmin && (
+            <div className="relative min-w-[220px]">
+              <select
+                value={selectedBranchId}
+                onChange={(e) =>
+                  setSelectedBranchId(e.target.value === "all" ? "all" : Number(e.target.value))
+                }
+                className="w-full appearance-none px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm cursor-pointer pr-10"
+              >
+                <option value="all">Tất cả chi nhánh</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <DownOutlined className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-[10px] pointer-events-none" />
+            </div>
+          )}
+        </div>
+
+        {/* MAIN CONTENT */}
+        {loading && (
+          <div className="p-20 text-center flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-600 font-bold">Đang tải dữ liệu xe...</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {filteredCars.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                {currentCars.map((car) => (
+                  // ✅ Truyền userRole xuống Card để xử lý nút Sửa/Xóa
+                  <CarCard key={car.id} car={car} userRole={user?.role} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 p-20 text-center text-slate-600 font-bold shadow-sm">
+                Không tìm thấy xe nào phù hợp với yêu cầu.
+              </div>
+            )}
+
+            {/* PAGINATION */}
+            {filteredCars.length > 0 && (
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                <p className="text-xs text-slate-600 font-bold">
+                  Hiển thị {startIndex + 1}-
+                  {Math.min(startIndex + itemsPerPage, filteredCars.length)} trong tổng số{" "}
+                  {filteredCars.length} xe
+                </p>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  {[...Array(totalPages)].map((_, index) => {
+                    const page = index + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs transition-all ${
+                          currentPage === page
+                            ? "bg-[#1677FF] text-white shadow-md shadow-blue-200"
+                            : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 transition-all"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
   );
 }
 

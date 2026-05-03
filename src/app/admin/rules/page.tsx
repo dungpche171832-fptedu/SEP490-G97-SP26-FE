@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/admin/Sidebar";
-import Header from "@/components/admin/Header";
 import { ruleService, Rule, CarType, ReplaceRuleRequest } from "@/services/ruleService";
 
 type EditableRule = {
@@ -270,233 +268,226 @@ export default function RulesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar />
-      <Header />
+    <main className="min-h-screen bg-slate-50 px-6 py-6">
+      <div className="mx-auto w-full max-w-[1280px] rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-800">Quản lý rule tính tiền vé</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Thiết lập khoảng cách và giá vé theo loại xe
+          </p>
+        </div>
 
-      <main className="ml-64 pt-16 p-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-800">Quản lý rule tính tiền vé</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Thiết lập khoảng cách và giá vé theo loại xe
-            </p>
-          </div>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <select
+            value={carType}
+            disabled={loading || saving || isEditing}
+            onChange={(e) => setCarType(e.target.value as CarType)}
+            className="px-4 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100"
+          >
+            <option value="SEAT_9">SEAT_9</option>
+            <option value="SEAT_16">SEAT_16</option>
+            <option value="LIMOUSINE_11">LIMOUSINE_11</option>
+          </select>
 
-          <div className="flex flex-wrap gap-3 mb-4">
-            <select
-              value={carType}
-              disabled={loading || saving || isEditing}
-              onChange={(e) => setCarType(e.target.value as CarType)}
-              className="px-4 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-100"
-            >
-              <option value="SEAT_9">SEAT_9</option>
-              <option value="SEAT_16">SEAT_16</option>
-              <option value="LIMOUSINE_11">LIMOUSINE_11</option>
-            </select>
+          <button
+            onClick={() => fetchRules(carType)}
+            disabled={loading || saving}
+            type="button"
+            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+          >
+            Tải lại
+          </button>
 
+          {!isEditing ? (
             <button
-              onClick={() => fetchRules(carType)}
+              onClick={handleEdit}
               disabled={loading || saving}
               type="button"
-              className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
             >
-              Tải lại
+              Chỉnh sửa
             </button>
-
-            {!isEditing ? (
+          ) : (
+            <>
               <button
-                onClick={handleEdit}
+                onClick={handleSave}
                 disabled={loading || saving}
                 type="button"
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
               >
-                Chỉnh sửa
+                {saving ? "Đang lưu..." : "Lưu"}
               </button>
-            ) : (
-              <>
-                <button
-                  onClick={handleSave}
-                  disabled={loading || saving}
-                  type="button"
-                  className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
-                >
-                  {saving ? "Đang lưu..." : "Lưu"}
-                </button>
 
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={loading || saving}
-                  type="button"
-                  className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-              </>
-            )}
-          </div>
-
-          {loading && <p className="text-sm text-slate-500">Đang tải dữ liệu...</p>}
-
-          {!loading && error && <p className="text-sm text-red-500 mb-3">{error}</p>}
-
-          {!loading && !error && message && (
-            <p className="text-sm text-green-600 mb-3">{message}</p>
-          )}
-
-          {!loading && (
-            <>
-              <p className="text-sm text-slate-700 mb-4">
-                <strong>Tổng số rule:</strong> {totalCount}
-              </p>
-
-              {rules.length > 0 ? (
-                <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                  <table className="w-full border-collapse bg-white">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                          Loại xe
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                          Điểm đầu
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                          Điểm cuối
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                          Giá vé
-                        </th>
-                        {isEditing && (
-                          <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                            Cộng
-                          </th>
-                        )}
-                        {isEditing && (
-                          <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
-                            Trừ
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rules.map((rule, index) => {
-                        const isLastRow = index === rules.length - 1;
-
-                        return (
-                          <tr
-                            key={`${rule.id}-${index}`}
-                            className={isEditing && isLastRow ? "bg-amber-50" : "bg-white"}
-                          >
-                            <td className="px-4 py-3 border-b border-slate-200 text-sm text-slate-700">
-                              {rule.carType}
-                            </td>
-
-                            <td className="px-4 py-3 border-b border-slate-200">
-                              <input
-                                type="number"
-                                value={rule.minKm}
-                                disabled={!isEditing}
-                                onChange={(e) => updateRuleField(index, "minKm", e.target.value)}
-                                className={`w-full px-3 py-2 rounded-xl border text-sm outline-none ${
-                                  !isEditing
-                                    ? "bg-slate-100 border-slate-200 text-slate-500"
-                                    : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
-                                }`}
-                              />
-                            </td>
-
-                            <td className="px-4 py-3 border-b border-slate-200">
-                              <input
-                                type="number"
-                                value={rule.maxKm}
-                                disabled={!isEditing}
-                                placeholder={isLastRow ? "Không giới hạn" : ""}
-                                onChange={(e) => updateRuleField(index, "maxKm", e.target.value)}
-                                className={`w-full px-3 py-2 rounded-xl border text-sm outline-none ${
-                                  !isEditing
-                                    ? "bg-slate-100 border-slate-200 text-slate-500"
-                                    : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
-                                }`}
-                              />
-                            </td>
-
-                            <td className="px-4 py-3 border-b border-slate-200 align-top h-[72px]">
-                              <div className="flex flex-col justify-between h-full">
-                                {/* Input */}
-                                <input
-                                  type="number"
-                                  value={rule.price}
-                                  disabled={!isEditing}
-                                  onChange={(e) => updateRuleField(index, "price", e.target.value)}
-                                  className={`w-full h-10 px-3 py-2 rounded-xl border text-sm outline-none ${
-                                    !isEditing
-                                      ? "bg-slate-100 border-slate-200 text-slate-500"
-                                      : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
-                                  }`}
-                                />
-
-                                {/* VND */}
-                                <span className="text-xs text-slate-500 leading-none text-left">
-                                  {rule.price.trim() !== "" && !Number.isNaN(Number(rule.price))
-                                    ? formatPrice(Number(rule.price))
-                                    : "\u00A0"}
-                                </span>
-                              </div>
-                            </td>
-
-                            {isEditing && (
-                              <td className="px-4 py-3 border-b border-slate-200">
-                                {isLastRow ? (
-                                  <button
-                                    onClick={handleAddLastRule}
-                                    type="button"
-                                    className="w-9 h-9 rounded-xl border border-slate-300 bg-white text-slate-700 text-lg hover:bg-slate-50"
-                                  >
-                                    +
-                                  </button>
-                                ) : null}
-                              </td>
-                            )}
-
-                            {isEditing && (
-                              <td className="px-4 py-3 border-b border-slate-200">
-                                {isLastRow ? (
-                                  <button
-                                    onClick={handleRemoveLastRule}
-                                    type="button"
-                                    className="w-9 h-9 rounded-xl border border-red-200 bg-red-50 text-red-600 text-lg hover:bg-red-100"
-                                  >
-                                    -
-                                  </button>
-                                ) : null}
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm text-slate-500">Chưa có dữ liệu rule.</p>
-
-                  {isEditing && (
-                    <button
-                      onClick={handleAddLastRule}
-                      type="button"
-                      className="mt-3 px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50"
-                    >
-                      Tạo dòng đầu tiên
-                    </button>
-                  )}
-                </div>
-              )}
+              <button
+                onClick={handleCancelEdit}
+                disabled={loading || saving}
+                type="button"
+                className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+              >
+                Hủy
+              </button>
             </>
           )}
         </div>
-      </main>
-    </div>
+
+        {loading && <p className="text-sm text-slate-500">Đang tải dữ liệu...</p>}
+
+        {!loading && error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+        {!loading && !error && message && <p className="text-sm text-green-600 mb-3">{message}</p>}
+
+        {!loading && (
+          <>
+            <p className="text-sm text-slate-700 mb-4">
+              <strong>Tổng số rule:</strong> {totalCount}
+            </p>
+
+            {rules.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full border-collapse bg-white">
+                  <thead>
+                    <tr className="bg-slate-100">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                        Loại xe
+                      </th>
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                        Điểm đầu
+                      </th>
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                        Điểm cuối
+                      </th>
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                        Giá vé
+                      </th>
+                      {isEditing && (
+                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                          Cộng
+                        </th>
+                      )}
+                      {isEditing && (
+                        <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 border-b border-slate-200">
+                          Trừ
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rules.map((rule, index) => {
+                      const isLastRow = index === rules.length - 1;
+
+                      return (
+                        <tr
+                          key={`${rule.id}-${index}`}
+                          className={isEditing && isLastRow ? "bg-amber-50" : "bg-white"}
+                        >
+                          <td className="px-4 py-3 border-b border-slate-200 text-sm text-slate-700">
+                            {rule.carType}
+                          </td>
+
+                          <td className="px-4 py-3 border-b border-slate-200">
+                            <input
+                              type="number"
+                              value={rule.minKm}
+                              disabled={!isEditing}
+                              onChange={(e) => updateRuleField(index, "minKm", e.target.value)}
+                              className={`w-full px-3 py-2 rounded-xl border text-sm outline-none ${
+                                !isEditing
+                                  ? "bg-slate-100 border-slate-200 text-slate-500"
+                                  : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
+                              }`}
+                            />
+                          </td>
+
+                          <td className="px-4 py-3 border-b border-slate-200">
+                            <input
+                              type="number"
+                              value={rule.maxKm}
+                              disabled={!isEditing}
+                              placeholder={isLastRow ? "Không giới hạn" : ""}
+                              onChange={(e) => updateRuleField(index, "maxKm", e.target.value)}
+                              className={`w-full px-3 py-2 rounded-xl border text-sm outline-none ${
+                                !isEditing
+                                  ? "bg-slate-100 border-slate-200 text-slate-500"
+                                  : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
+                              }`}
+                            />
+                          </td>
+
+                          <td className="px-4 py-3 border-b border-slate-200 align-top h-[72px]">
+                            <div className="flex flex-col justify-between h-full">
+                              {/* Input */}
+                              <input
+                                type="number"
+                                value={rule.price}
+                                disabled={!isEditing}
+                                onChange={(e) => updateRuleField(index, "price", e.target.value)}
+                                className={`w-full h-10 px-3 py-2 rounded-xl border text-sm outline-none ${
+                                  !isEditing
+                                    ? "bg-slate-100 border-slate-200 text-slate-500"
+                                    : "bg-white border-slate-300 focus:ring-2 focus:ring-blue-500/20"
+                                }`}
+                              />
+
+                              {/* VND */}
+                              <span className="text-xs text-slate-500 leading-none text-left">
+                                {rule.price.trim() !== "" && !Number.isNaN(Number(rule.price))
+                                  ? formatPrice(Number(rule.price))
+                                  : "\u00A0"}
+                              </span>
+                            </div>
+                          </td>
+
+                          {isEditing && (
+                            <td className="px-4 py-3 border-b border-slate-200">
+                              {isLastRow ? (
+                                <button
+                                  onClick={handleAddLastRule}
+                                  type="button"
+                                  className="w-9 h-9 rounded-xl border border-slate-300 bg-white text-slate-700 text-lg hover:bg-slate-50"
+                                >
+                                  +
+                                </button>
+                              ) : null}
+                            </td>
+                          )}
+
+                          {isEditing && (
+                            <td className="px-4 py-3 border-b border-slate-200">
+                              {isLastRow ? (
+                                <button
+                                  onClick={handleRemoveLastRule}
+                                  type="button"
+                                  className="w-9 h-9 rounded-xl border border-red-200 bg-red-50 text-red-600 text-lg hover:bg-red-100"
+                                >
+                                  -
+                                </button>
+                              ) : null}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-slate-500">Chưa có dữ liệu rule.</p>
+
+                {isEditing && (
+                  <button
+                    onClick={handleAddLastRule}
+                    type="button"
+                    className="mt-3 px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50"
+                  >
+                    Tạo dòng đầu tiên
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
   );
 }
