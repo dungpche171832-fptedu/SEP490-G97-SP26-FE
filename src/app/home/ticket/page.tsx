@@ -519,8 +519,8 @@ function AddTicketContent() {
               className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg
                                 ${
                                   selectedSeats.length === 0 || isCalculatingPrice
-                                    ? "bg-slate-100 !text-black opacity-100 shadow-none cursor-not-allowed"
-                                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-blue-200"
+                                    ? "bg-slate-100 !text-slate-400 opacity-100 shadow-none cursor-not-allowed"
+                                    : "bg-blue-600 !text-white hover:bg-blue-700 active:scale-95 shadow-blue-200"
                                 }`}
             >
               {isCalculatingPrice ? <LoadingOutlined /> : "Xác nhận & Thanh toán"}
@@ -577,7 +577,7 @@ function AddTicketContent() {
             <button
               onClick={handleBookTicket}
               disabled={isBooking}
-              className="w-full mt-8 py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest transition-all"
+              className="w-full mt-8 py-4 bg-blue-600 hover:bg-blue-700 !text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-200 transition-all disabled:opacity-70"
             >
               {isBooking ? <LoadingOutlined /> : "Tôi đã chuyển khoản"}
             </button>
