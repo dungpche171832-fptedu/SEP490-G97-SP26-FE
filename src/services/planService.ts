@@ -8,7 +8,7 @@ import type {
   ChangeCarPayload,
   PlanSearchParams,
   PlanSeatResponse,
-  TicketStationResponse,
+  PlanStationResponse,
 } from "../model/plan";
 import type { Car } from "../model/car";
 
@@ -24,11 +24,11 @@ type PlanCarForTicket = Car & {
 };
 
 interface PlanDetailForTicket extends PlanDetailResponse {
-  startStation?: TicketStationResponse;
-  start_station?: TicketStationResponse;
-  endStations?: TicketStationResponse[];
-  end_stations?: TicketStationResponse[];
-  allStations?: TicketStationResponse[];
+  startStation?: PlanStationResponse;
+  start_station?: PlanStationResponse;
+  endStations?: PlanStationResponse[];
+  end_stations?: PlanStationResponse[];
+  allStations?: PlanStationResponse[];
   listSeats?: PlanSeatResponse[];
   car?: PlanCarForTicket;
   carInfo?: PlanCarForTicket;
@@ -398,7 +398,7 @@ export const planService = {
       if (stRes.ok) {
         const stData = await stRes.json();
 
-        const stationsList = unwrapApiResponse<TicketStationResponse[]>(stData);
+        const stationsList = unwrapApiResponse<PlanStationResponse[]>(stData);
 
         if (Array.isArray(stationsList) && stationsList.length > 0) {
           planDetail.startStation = stationsList[0];

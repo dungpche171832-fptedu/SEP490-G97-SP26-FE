@@ -96,3 +96,10 @@ export interface PlanSearchParams {
   startTime?: string;
   status?: string;
 }
+
+export interface PlanExtended extends Plan {
+  startStationName?: string;
+  endStationName?: string;
+  departureId?: number;
+  destinationId?: number;
+}

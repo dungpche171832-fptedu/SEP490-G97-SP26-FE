@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ApartmentOutlined,
-  BarcodeOutlined,
   CalendarOutlined,
   CarOutlined,
   DollarCircleOutlined,
@@ -98,13 +97,13 @@ export default function Sidebar() {
           href="/admin/managePlan"
           active={pathname?.startsWith("/admin/managePlan")}
         />
-
+        {/* 
         <NavItem
           icon={<BarcodeOutlined />}
           label="Quản lý vé"
           href="/admin/manageTicket"
           active={pathname?.startsWith("/admin/manageTicket")}
-        />
+        /> */}
 
         <NavItem
           icon={<DollarCircleOutlined />}

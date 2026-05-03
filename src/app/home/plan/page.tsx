@@ -1,92 +1,162 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plan } from "src/model/plan";
 import { planService } from "src/services/planService";
+import { getStations, Station } from "src/services/station.service";
 import PlanCard from "src/components/plan/plan_card";
-import { DatePicker } from "antd";
-import dayjs from "dayjs";
+import { DatePicker, Select, message } from "antd";
+import { CaretDownOutlined } from "@ant-design/icons";
+import dayjs, { Dayjs } from "dayjs";
+
+interface StationExtended extends Station {
+  cityName?: string;
+}
 
 interface PlanExtended extends Plan {
   startStationName?: string;
   endStationName?: string;
 }
 
+const removeAccents = (str: string): string => {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+};
+
 export default function ListPlanPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [plans, setPlans] = useState<PlanExtended[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [dateInput, setDateInput] = useState<string | null>(null);
-  const [filterQuery, setFilterQuery] = useState({ text: "", date: null as string | null });
-
-  // State cho phân trang
-  const [currentPage, setCurrentPage] = useState(1);
+  // Trạng thái cục bộ cho thanh tìm kiếm và phân trang
+  const [searchInput, setSearchInput] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 9;
 
-  const router = useRouter();
+  // Lấy các tham số lọc trực tiếp từ URL thông qua useMemo (không dùng state)
+  const departureId = useMemo((): number | undefined => {
+    const dep = searchParams?.get("dep");
+    return dep ? Number(dep) : undefined;
+  }, [searchParams]);
 
-  useEffect(() => {
-    planService
-      .getListPlans()
-      .then((data) => {
+  const destinationId = useMemo((): number | undefined => {
+    const des = searchParams?.get("des");
+    return des ? Number(des) : undefined;
+  }, [searchParams]);
+
+  const dateInput = useMemo((): string | null => {
+    return searchParams?.get("date") || null;
+  }, [searchParams]);
+
+  // Đọc dữ liệu ban đầu
+  useEffect((): void => {
+    const loadData = async (): Promise<void> => {
+      try {
+        const data = await planService.getListPlans();
         let plansData: PlanExtended[] = [];
         if (Array.isArray(data)) {
           plansData = data;
         } else if (data && typeof data === "object" && "plans" in data) {
           plansData = data.plans as PlanExtended[];
         }
-
         setPlans(plansData);
+
+        const stationRes = await getStations();
+        setStations(stationRes.stations || []);
+
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      } catch {
+        message.error("Không thể tải dữ liệu");
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  // Logic Lọc: Thêm điều kiện status === "ACTIVE"
-  const filteredPlans = useMemo(() => {
+  const stationOptions = stations.map((s) => {
+    const stationData = s as StationExtended;
+    return {
+      value: s.id,
+      label: `${s.name}${stationData.cityName ? ` - ${stationData.cityName}` : ""}`,
+    };
+  });
+
+  // Bộ lọc lịch trình
+  const filteredPlans = useMemo((): PlanExtended[] => {
     const today = dayjs().startOf("day");
 
-    return plans.filter((p) => {
-      // Chỉ lấy các plan có trạng thái ACTIVE
+    return plans.filter((p: PlanExtended) => {
       const isActive = p.status === "ACTIVE";
-
-      // Chỉ lấy lịch trình từ hôm nay trở đi
       const planDate = dayjs(p.startTime);
       const isFromToday = planDate.isValid() && !planDate.isBefore(today, "day");
 
-      const startStation = p.startStationName ?? "";
-      const endStation = p.endStationName ?? "";
+      const namePlan = (p.routeName || "").toLowerCase();
+      const normalizedSearch = removeAccents(namePlan);
+      const normalizedQuery = removeAccents(searchInput.toLowerCase());
+      const matchesSearch = normalizedSearch.includes(normalizedQuery);
 
-      const searchContent = `${startStation} ${endStation}`.toLowerCase();
-      const matchesSearch = searchContent.includes(filterQuery.text.toLowerCase());
+      const sortedStations = p.stations
+        ? [...p.stations].sort(
+            (a: { order?: number }, b: { order?: number }) => (a.order || 0) - (b.order || 0),
+          )
+        : [];
 
-      const matchesDate = filterQuery.date
-        ? dayjs(p.startTime).format("YYYY-MM-DD") === filterQuery.date
-        : true;
+      let matchesDeparture = true;
+      if (departureId !== undefined) {
+        const firstStation = sortedStations[0];
+        matchesDeparture = firstStation?.stationId === departureId;
+      }
 
-      return isActive && isFromToday && matchesSearch && matchesDate;
+      let matchesDestination = true;
+      if (destinationId !== undefined) {
+        const lastStation = sortedStations[sortedStations.length - 1];
+        matchesDestination = lastStation?.stationId === destinationId;
+      }
+
+      const matchesDate = dateInput ? dayjs(p.startTime).format("YYYY-MM-DD") === dateInput : true;
+
+      return (
+        isActive &&
+        isFromToday &&
+        matchesSearch &&
+        matchesDeparture &&
+        matchesDestination &&
+        matchesDate
+      );
     });
-  }, [filterQuery, plans]);
+  }, [searchInput, departureId, destinationId, dateInput, plans]);
 
-  // Logic Phân trang: Cắt mảng filteredPlans thành từng trang 9 phần tử
-  const paginatedPlans = useMemo(() => {
+  const paginatedPlans = useMemo((): PlanExtended[] => {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredPlans.slice(startIndex, startIndex + pageSize);
   }, [filteredPlans, currentPage]);
 
   const totalPages = Math.ceil(filteredPlans.length / pageSize);
 
-  const handleSearch = () => {
-    setFilterQuery({
-      text: searchInput,
-      date: dateInput,
-    });
-    setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+  const handleBooking = (id: number): void => {
+    router.push(`/home/ticket?planId=${id}`);
   };
 
-  const handleBooking = (id: number) => {
-    router.push(`/home/ticket?planId=${id}`);
+  // Hàm cập nhật query trên URL khi người dùng thay đổi bộ lọc
+  const updateFilterParam = (key: string, value: string | number | null | undefined): void => {
+    const currentParams = new URLSearchParams(searchParams?.toString() || "");
+    if (value !== undefined && value !== null && value !== "") {
+      currentParams.set(key, String(value));
+    } else {
+      currentParams.delete(key);
+    }
+
+    // Reset lại trang về 1 khi lọc mới
+    currentParams.set("page", "1");
+    router.push(`/home/plan?${currentParams.toString()}`);
+    setCurrentPage(1);
   };
 
   return (
@@ -101,24 +171,63 @@ export default function ListPlanPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-10 md:px-20">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-50 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            <div className="md:col-span-7">
-              <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-wider">
-                Điểm đi / Điểm đến
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Tuyến đường
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Nhập địa điểm bạn muốn đến..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-4 pr-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none ring-1 ring-slate-200 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Nhập tên tuyến đường..."
+                value={searchInput}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSearchInput(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none ring-1 ring-slate-200 focus:ring-blue-500/20 transition-all"
+              />
             </div>
 
-            <div className="md:col-span-3">
-              <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-wider">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Điểm đi
+              </label>
+              <Select
+                showSearch
+                allowClear
+                placeholder="Chọn điểm đi"
+                size="large"
+                className="w-full"
+                options={stationOptions}
+                value={departureId}
+                onChange={(val: number | undefined) => {
+                  updateFilterParam("dep", val);
+                }}
+                optionFilterProp="label"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Điểm đến
+              </label>
+              <Select
+                showSearch
+                allowClear
+                placeholder="Chọn điểm đến"
+                size="large"
+                className="w-full"
+                options={stationOptions}
+                value={destinationId}
+                onChange={(val: number | undefined) => {
+                  updateFilterParam("des", val);
+                }}
+                optionFilterProp="label"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
                 Ngày đi
               </label>
               <div className="w-full bg-slate-50 rounded-lg ring-1 ring-slate-200 focus-within:ring-blue-500/20 transition-all">
@@ -126,26 +235,18 @@ export default function ListPlanPage() {
                   format="DD/MM/YYYY"
                   variant="borderless"
                   placeholder="Chọn ngày"
-                  className="w-full px-4 py-2.5 text-sm font-black"
+                  className="w-full px-2 py-2 text-sm font-bold"
                   style={{ width: "100%" }}
                   value={dateInput ? dayjs(dateInput) : null}
-                  disabledDate={(current) => {
+                  disabledDate={(current: Dayjs) => {
                     return current ? current.isBefore(dayjs().startOf("day"), "day") : false;
                   }}
-                  onChange={(date) => {
-                    setDateInput(date ? date.format("YYYY-MM-DD") : null);
+                  onChange={(date: Dayjs | null) => {
+                    updateFilterParam("date", date ? date.format("YYYY-MM-DD") : null);
                   }}
+                  suffixIcon={<CaretDownOutlined />}
                 />
               </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <button
-                onClick={handleSearch}
-                className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all uppercase shadow-lg shadow-blue-200"
-              >
-                Tìm kiếm
-              </button>
             </div>
           </div>
         </div>
@@ -160,13 +261,15 @@ export default function ListPlanPage() {
               <p className="text-slate-500 text-sm">
                 Hiển thị <b>{paginatedPlans.length}</b> / <b>{filteredPlans.length}</b> lịch trình
               </p>
-              {(filterQuery.text || filterQuery.date) && (
+              {(searchInput ||
+                departureId !== undefined ||
+                destinationId !== undefined ||
+                dateInput) && (
                 <button
                   onClick={() => {
                     setSearchInput("");
-                    setDateInput(null);
-                    setFilterQuery({ text: "", date: null });
                     setCurrentPage(1);
+                    router.push("/home/plan");
                   }}
                   className="text-blue-600 text-xs font-bold uppercase hover:underline"
                 >
@@ -181,10 +284,8 @@ export default function ListPlanPage() {
               ))}
             </div>
 
-            {/* UI Phân trang */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center gap-2">
-                {/* Nút Trước */}
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((prev) => prev - 1)}
@@ -193,7 +294,6 @@ export default function ListPlanPage() {
                   Trước
                 </button>
 
-                {/* Danh sách số trang */}
                 {[...Array(totalPages)].map((_, index) => {
                   const pageNumber = index + 1;
                   const isActive = currentPage === pageNumber;
@@ -204,8 +304,8 @@ export default function ListPlanPage() {
                       onClick={() => setCurrentPage(pageNumber)}
                       className={`w-10 h-10 rounded-lg text-sm font-bold transition-all border ${
                         isActive
-                          ? "bg-slate-900 border-slate-900 text-white shadow-md" // Active: Nền đen chữ trắng
-                          : "bg-white border-slate-300 text-slate-900 hover:border-slate-900 hover:bg-slate-50" // Thường: Chữ đen border xám
+                          ? "!bg-slate-900 !text-white shadow-md"
+                          : "bg-white border-slate-300 text-slate-900 hover:border-slate-900 hover:bg-slate-50"
                       }`}
                     >
                       {pageNumber}
@@ -213,10 +313,9 @@ export default function ListPlanPage() {
                   );
                 })}
 
-                {/* Nút Sau */}
                 <button
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
                   className="px-4 py-2 rounded-lg bg-white border border-slate-300 text-sm font-bold text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 transition-all shadow-sm"
                 >
                   Sau

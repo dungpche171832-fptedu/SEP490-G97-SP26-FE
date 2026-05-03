@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import { getStations, Station } from "src/services/station.service";
 import { useRouter } from "next/navigation";
+import dayjs, { Dayjs } from "dayjs";
 
 export default function HomePage() {
   const router = useRouter();
@@ -30,10 +31,13 @@ export default function HomePage() {
     loadStations();
   }, []);
 
-  const stationOptions = stations.map((s: Station) => ({
-    value: s.id,
-    label: s.name,
-  }));
+  const stationOptions = stations.map((s) => {
+    const stationData = s as Station & { cityName?: string };
+    return {
+      value: s.id,
+      label: `${s.name}${stationData.cityName ? ` - ${stationData.cityName}` : ""}`,
+    };
+  });
 
   const handleSearchClick = () => {
     if (!departureId || !destinationId) {
@@ -122,7 +126,9 @@ export default function HomePage() {
                 className="w-full"
                 placeholder="Chọn ngày"
                 suffixIcon={<CaretDownOutlined />}
-                onChange={(date) => setTravelDate(date ? date.format("YYYY-MM-DD") : null)}
+                onChange={(date: Dayjs | null) =>
+                  setTravelDate(date ? date.format("YYYY-MM-DD") : null)
+                }
               />
             </div>
 
@@ -141,19 +147,19 @@ export default function HomePage() {
 
       {/* 3. POPULAR ROUTES SECTION */}
       <section className="max-w-[1440px] mx-auto px-10 py-32 w-full text-center">
-        <h2 className="text-4xl font-bold text-slate-900 mb-16">Tin Tức Mới</h2>
+        <h2 className="text-4xl font-bold text-slate-900 mb-16">Các tuyến phổ biến</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
-              title: "Hà Nội - Lào Cai",
+              title: "Hà Nội - Lạng Sơn",
               img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070",
             },
             {
-              title: "Hà Nội - Quảng Ninh",
+              title: "Hà Nội - Trung Quốc",
               img: "https://images.unsplash.com/photo-1599708153386-62bd3f02407d?q=80&w=2070",
             },
             {
-              title: "Hà Nội - Hải Phòng",
+              title: "Hà Nội - Hà Giang",
               img: "https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=2070",
             },
           ].map((route, i) => (
