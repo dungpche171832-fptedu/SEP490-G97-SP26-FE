@@ -16,12 +16,16 @@ import {
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { planService } from "@/services/planService";
+import { getAccountInfo } from "@/services/accountService";
+import { getRole } from "@/lib/auth/auth.service";
 import type { Plan, PlanResponse, PlanStationResponse, PlanStatus } from "@/model/plan";
 
 interface PlanTableItem {
   id: number;
   key: string;
   code: string;
+  accountId: number;
+  branchId: number;
   driver: string;
   driverPhone: string;
   routeName: string;
@@ -86,8 +90,69 @@ function getStatusLabel(status: PlanStatus): string {
   }
 }
 
+function getNumberFromRecord(data: unknown, keys: string[]): number | undefined {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return undefined;
+  }
+
+  const record = data as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "number" && !Number.isNaN(value)) {
+      return value;
+    }
+
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsedValue = Number(value);
+
+      if (!Number.isNaN(parsedValue)) {
+        return parsedValue;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function getAccountIdFromToken(): number | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const token = window.localStorage.getItem("token");
+
+  if (!token) {
+    return undefined;
+  }
+
+  try {
+    const payload = token.split(".")[1];
+
+    if (!payload) {
+      return undefined;
+    }
+
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const decodedPayload = JSON.parse(window.atob(paddedBase64)) as unknown;
+
+    return getNumberFromRecord(decodedPayload, ["accountId", "id", "userId", "account_id"]);
+  } catch (error: unknown) {
+    console.error("Không đọc được accountId từ token:", error);
+    return undefined;
+  }
+}
+
 export default function PlanManagementPage() {
   const router = useRouter();
+
+  const currentRole = getRole()?.replace("ROLE_", "").toLowerCase() || "";
+  const canCreatePlan = currentRole === "admin" || currentRole === "manager";
+
+  const [currentAccountId, setCurrentAccountId] = useState<number | undefined>(undefined);
+  const [currentBranchId, setCurrentBranchId] = useState<number | undefined>(undefined);
 
   const [plans, setPlans] = useState<PlanTableItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -96,6 +161,31 @@ export default function PlanManagementPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const pageSize = 10;
+
+  useEffect(() => {
+    const fetchCurrentAccount = async () => {
+      try {
+        const currentAccount = await getAccountInfo();
+
+        const accountId = getNumberFromRecord(currentAccount, [
+          "accountId",
+          "id",
+          "userId",
+          "account_id",
+        ]);
+        const branchId = getNumberFromRecord(currentAccount, ["branchId", "branch_id"]);
+
+        setCurrentAccountId(accountId ?? getAccountIdFromToken());
+        setCurrentBranchId(branchId);
+      } catch (error: unknown) {
+        console.error("Không lấy được thông tin tài khoản hiện tại:", error);
+
+        setCurrentAccountId(getAccountIdFromToken());
+      }
+    };
+
+    fetchCurrentAccount();
+  }, []);
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -112,6 +202,8 @@ export default function PlanManagementPage() {
           id: item.id,
           key: String(item.id),
           code: item.code,
+          accountId: item.accountId,
+          branchId: item.branchId,
           driver: item.driverName,
           driverPhone: item.driverPhone || "-",
           routeName: item.routeName || "-",
@@ -169,6 +261,22 @@ export default function PlanManagementPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchText, statusFilter]);
+
+  const canEditPlan = (record: PlanTableItem): boolean => {
+    if (currentRole === "admin") {
+      return true;
+    }
+
+    if (currentRole === "staff") {
+      return currentAccountId !== undefined && record.accountId === currentAccountId;
+    }
+
+    if (currentRole === "manager") {
+      return currentBranchId !== undefined && record.branchId === currentBranchId;
+    }
+
+    return false;
+  };
 
   const columns: ColumnsType<PlanTableItem> = [
     {
@@ -253,24 +361,34 @@ export default function PlanManagementPage() {
       title: "THAO TÁC",
       key: "action",
       align: "center",
-      render: (_value, record) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            onClick={() => router.push(`/admin/managePlan/${record.id}`)}
-            icon={
-              <EditOutlined className="text-lg text-slate-400 transition-colors hover:text-blue-500" />
-            }
-          />
+      render: (_value, record) => {
+        const isAllowedToEdit = canEditPlan(record);
 
-          <Button
-            type="text"
-            icon={
-              <DeleteOutlined className="text-lg text-slate-400 transition-colors hover:text-red-500" />
-            }
-          />
-        </Space>
-      ),
+        if (!isAllowedToEdit) {
+          return <span className="text-xs font-semibold text-slate-400">Không có quyền</span>;
+        }
+
+        return (
+          <Space size="middle">
+            <Button
+              type="text"
+              onClick={() => router.push(`/admin/managePlan/${record.id}`)}
+              icon={
+                <EditOutlined className="text-lg text-slate-400 transition-colors hover:text-blue-500" />
+              }
+            />
+
+            {currentRole === "admin" && (
+              <Button
+                type="text"
+                icon={
+                  <DeleteOutlined className="text-lg text-slate-400 transition-colors hover:text-red-500" />
+                }
+              />
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -288,14 +406,16 @@ export default function PlanManagementPage() {
             </p>
           </div>
 
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => router.push("/admin/managePlan/create")}
-            className="h-11 rounded-lg border-none bg-blue-600 px-6 font-bold shadow-md transition-all hover:bg-blue-700"
-          >
-            Thêm lịch trình
-          </Button>
+          {canCreatePlan && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => router.push("/admin/managePlan/create")}
+              className="h-11 rounded-lg border-none bg-blue-600 px-6 font-bold shadow-md transition-all hover:bg-blue-700"
+            >
+              Thêm lịch trình
+            </Button>
+          )}
         </div>
 
         <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">

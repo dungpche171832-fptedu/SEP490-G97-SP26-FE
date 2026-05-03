@@ -283,6 +283,11 @@ export default function PlanDetailPage() {
       await fetchCars();
     }
   };
+  const handleGoToTicketList = () => {
+    const planId = planDetail?.id ?? id;
+
+    router.push(`/admin/manageTicket?planId=${planId}`);
+  };
   const refreshPlanDetail = async () => {
     if (!id) return;
 
@@ -489,9 +494,16 @@ export default function PlanDetailPage() {
               Chi tiết lịch trình
             </h1>
 
-            <p className="mt-1 text-[16px] text-[#667085]">
-              Mã lịch trình: <span className="font-semibold text-[#1570EF]">{planDetail.code}</span>
-            </p>
+            <div className="mt-1 space-y-1 text-[16px] text-[#667085]">
+              <p>
+                Plan ID: <span className="font-semibold text-[#101828]">#{planDetail.id}</span>
+              </p>
+
+              <p>
+                Mã lịch trình:{" "}
+                <span className="font-semibold text-[#1570EF]">{planDetail.code}</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -511,27 +523,28 @@ export default function PlanDetailPage() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {currentRole === "manager" ? (
-                <Button
-                  danger
-                  type="primary"
-                  size="large"
-                  loading={updatingStatus}
-                  onClick={() => handleUpdateStatus("INACTIVE")}
-                  className="!rounded-xl !font-semibold"
-                >
-                  Chuyển không hoạt động
-                </Button>
-              ) : currentRole === "staff" ? (
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={updatingStatus}
-                  onClick={() => handleUpdateStatus("COMPLETE")}
-                  className="!rounded-xl !border-0 !bg-[#16A34A] !font-semibold hover:!bg-[#15803D]"
-                >
-                  Hoàn thành
-                </Button>
+              {currentRole === "staff" ? (
+                <>
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={updatingStatus}
+                    onClick={() => handleUpdateStatus("RUNNING")}
+                    className="!rounded-xl !border-0 !bg-[#1570EF] !font-semibold hover:!bg-[#175CD3]"
+                  >
+                    Bắt đầu
+                  </Button>
+
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={updatingStatus}
+                    onClick={() => handleUpdateStatus("COMPLETE")}
+                    className="!rounded-xl !border-0 !bg-[#16A34A] !font-semibold hover:!bg-[#15803D]"
+                  >
+                    Hoàn thành
+                  </Button>
+                </>
               ) : (
                 <>
                   <Select
@@ -555,15 +568,27 @@ export default function PlanDetailPage() {
               )}
             </div>
           </div>
+          <div className="flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-end">
+            <div className="flex flex-col items-start md:items-end">
+              <p className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#98A2B3]">
+                Trạng thái hiện tại
+              </p>
 
-          <div>
-            <p className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#98A2B3]">
-              Trạng thái hiện tại
-            </p>
+              <Tag
+                bordered={false}
+                className={`${statusClassName} !flex !h-[44px] !items-center !justify-center !px-5`}
+              >
+                ● {statusText}
+              </Tag>
+            </div>
 
-            <Tag bordered={false} className={statusClassName}>
-              ● {statusText}
-            </Tag>
+            <Button
+              type="primary"
+              onClick={handleGoToTicketList}
+              className="!h-[44px] !rounded-xl !border-0 !bg-[#1570EF] !px-6 !font-semibold !text-white hover:!bg-[#175CD3]"
+            >
+              Danh sách vé
+            </Button>
           </div>
         </div>
       </div>
