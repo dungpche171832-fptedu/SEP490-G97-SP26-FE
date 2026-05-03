@@ -6,6 +6,8 @@ import RoleGuard from "@/components/auth/RoleGuard";
 import { ConfigProvider } from "antd";
 import { usePathname } from "next/navigation";
 
+const appFontFamily = "var(--font-app), Arial, Helvetica, sans-serif";
+
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -17,21 +19,14 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
     <ConfigProvider
       theme={{
         token: {
-          fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
+          fontFamily: appFontFamily,
         },
       }}
     >
       <RoleGuard allowedRoles={allowedRoles} allowGuest={!isProfilePage}>
         <Header />
 
-        <div
-          className="subpixel-antialiased"
-          style={{
-            fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
-          }}
-        >
-          {children}
-        </div>
+        <div className="subpixel-antialiased">{children}</div>
 
         <Footer />
       </RoleGuard>
