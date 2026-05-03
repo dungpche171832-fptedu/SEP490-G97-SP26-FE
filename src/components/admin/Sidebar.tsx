@@ -1,10 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { message } from "antd";
 import {
   ApartmentOutlined,
   BarChartOutlined,
@@ -20,36 +19,36 @@ const normalizeRole = (role?: string | null): string => {
   return role?.replace("ROLE_", "").toLowerCase() || "";
 };
 
+const getRoleSnapshot = (): string => {
+  return normalizeRole(getRole());
+};
+
+const getServerRoleSnapshot = (): string => {
+  return "";
+};
+
+const subscribeRoleChange = (callback: () => void): (() => void) => {
+  window.addEventListener("storage", callback);
+
+  return () => {
+    window.removeEventListener("storage", callback);
+  };
+};
+
 const NavItem = ({
   icon,
   label,
   href,
   active,
-  adminOnly = false,
-  currentRole,
 }: {
   icon: React.ReactNode;
   label: string;
   href: string;
   active?: boolean;
-  adminOnly?: boolean;
-  currentRole: string;
 }) => {
-  const isBlocked = adminOnly && currentRole !== "admin";
-
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!isBlocked) {
-      return;
-    }
-
-    event.preventDefault();
-    message.warning("Chỉ admin mới được truy cập");
-  };
-
   return (
     <Link
       href={href}
-      onClick={handleClick}
       className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
         active
           ? "bg-blue-50 font-bold text-blue-600"
@@ -64,7 +63,13 @@ const NavItem = ({
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const currentRole = normalizeRole(getRole());
+  const currentRole = useSyncExternalStore(
+    subscribeRoleChange,
+    getRoleSnapshot,
+    getServerRoleSnapshot,
+  );
+
+  const isAdmin = currentRole === "admin";
 
   return (
     <aside className="fixed left-0 top-0 z-20 flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
@@ -85,7 +90,6 @@ export default function Sidebar() {
           label="Nhân viên"
           href="/admin/employees"
           active={pathname?.startsWith("/admin/employees")}
-          currentRole={currentRole}
         />
 
         <NavItem
@@ -93,7 +97,6 @@ export default function Sidebar() {
           label="Chi nhánh"
           href="/admin/branch"
           active={pathname?.startsWith("/admin/branch")}
-          currentRole={currentRole}
         />
 
         <NavItem
@@ -101,7 +104,6 @@ export default function Sidebar() {
           label="Xe"
           href="/admin/car"
           active={pathname?.startsWith("/admin/car")}
-          currentRole={currentRole}
         />
 
         <NavItem
@@ -109,7 +111,6 @@ export default function Sidebar() {
           label="Điểm dừng"
           href="/admin/station"
           active={pathname?.startsWith("/admin/station")}
-          currentRole={currentRole}
         />
 
         <NavItem
@@ -117,7 +118,6 @@ export default function Sidebar() {
           label="Tuyến đường"
           href="/admin/manageRoute"
           active={pathname?.startsWith("/admin/manageRoute")}
-          currentRole={currentRole}
         />
 
         <NavItem
@@ -125,35 +125,32 @@ export default function Sidebar() {
           label="Quản lý lịch trình"
           href="/admin/managePlan"
           active={pathname?.startsWith("/admin/managePlan")}
-          currentRole={currentRole}
         />
 
-        <NavItem
-          icon={<BarChartOutlined />}
-          label="Thống kê"
-          href="/admin/dashboard"
-          active={pathname?.startsWith("/admin/dashboard")}
-          adminOnly
-          currentRole={currentRole}
-        />
+        {isAdmin && (
+          <>
+            <NavItem
+              icon={<BarChartOutlined />}
+              label="Thống kê"
+              href="/admin/dashboard"
+              active={pathname?.startsWith("/admin/dashboard")}
+            />
 
-        <NavItem
-          icon={<DollarCircleOutlined />}
-          label="Giá tiền"
-          href="/admin/rules"
-          active={pathname?.startsWith("/admin/rules")}
-          adminOnly
-          currentRole={currentRole}
-        />
+            <NavItem
+              icon={<DollarCircleOutlined />}
+              label="Giá tiền"
+              href="/admin/rules"
+              active={pathname?.startsWith("/admin/rules")}
+            />
 
-        <NavItem
-          icon={<ReadFilled />}
-          label="Tin tức"
-          href="/admin/news"
-          active={pathname?.startsWith("/admin/news")}
-          adminOnly
-          currentRole={currentRole}
-        />
+            <NavItem
+              icon={<ReadFilled />}
+              label="Tin tức"
+              href="/admin/news"
+              active={pathname?.startsWith("/admin/news")}
+            />
+          </>
+        )}
       </nav>
     </aside>
   );
