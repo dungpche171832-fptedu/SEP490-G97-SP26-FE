@@ -102,4 +102,20 @@ export const newsService = {
 
     return response.json();
   },
+
+  getActiveNews: async (): Promise<NewsItem[]> => {
+    const response = await fetch(`${API_URL}/active`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "Có lỗi xảy ra khi lấy danh sách tin tức!");
+    }
+
+    return response.json();
+  },
 };

@@ -132,7 +132,7 @@ export default function Header() {
     { name: "Trang Chủ", href: "/home" },
     { name: "Lịch Trình", href: "/home/plan" },
     // { name: "Liên hệ", href: "/lien-he" },
-    { name: "Tin tức", href: "/tin-tuc" },
+    // { name: "Tin tức", href: "/tin-tuc" },
   ];
 
   const isActive = (path: string) => pathname === path;

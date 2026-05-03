@@ -1,22 +1,13 @@
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plan } from "src/model/plan";
+import { PlanExtended } from "src/model/plan";
 import { planService } from "src/services/planService";
 import { getStations, Station } from "src/services/station.service";
 import PlanCard from "src/components/plan/plan_card";
 import { DatePicker, Select, message } from "antd";
 import { CaretDownOutlined } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
-
-interface StationExtended extends Station {
-  cityName?: string;
-}
-
-interface PlanExtended extends Plan {
-  startStationName?: string;
-  endStationName?: string;
-}
 
 const removeAccents = (str: string): string => {
   return str
@@ -34,12 +25,10 @@ export default function ListPlanPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Trạng thái cục bộ cho thanh tìm kiếm và phân trang
   const [searchInput, setSearchInput] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 9;
 
-  // Lấy các tham số lọc trực tiếp từ URL thông qua useMemo (không dùng state)
   const departureId = useMemo((): number | undefined => {
     const dep = searchParams?.get("dep");
     return dep ? Number(dep) : undefined;
@@ -54,7 +43,6 @@ export default function ListPlanPage() {
     return searchParams?.get("date") || null;
   }, [searchParams]);
 
-  // Đọc dữ liệu ban đầu
   useEffect((): void => {
     const loadData = async (): Promise<void> => {
       try {
@@ -81,7 +69,7 @@ export default function ListPlanPage() {
   }, []);
 
   const stationOptions = stations.map((s) => {
-    const stationData = s as StationExtended;
+    const stationData = s as { cityName?: string };
     return {
       value: s.id,
       label: `${s.name}${stationData.cityName ? ` - ${stationData.cityName}` : ""}`,
@@ -146,6 +134,7 @@ export default function ListPlanPage() {
 
   // Hàm cập nhật query trên URL khi người dùng thay đổi bộ lọc
   const updateFilterParam = (key: string, value: string | number | null | undefined): void => {
+    // Lược bỏ từ khóa function
     const currentParams = new URLSearchParams(searchParams?.toString() || "");
     if (value !== undefined && value !== null && value !== "") {
       currentParams.set(key, String(value));
@@ -169,7 +158,7 @@ export default function ListPlanPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-10 md:px-20">
+      <div className="max-w mx-auto px-6 py-10 md:px-20">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-50 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
             <div className="flex flex-col gap-2">
@@ -334,3 +323,8 @@ export default function ListPlanPage() {
     </div>
   );
 }
+
+// Cú pháp khai báo đầy đủ updateFilterParam ở bên ngoài để tránh lỗi cú pháp
+const updateFilterParam = (key: string, value: string | number | null | undefined): void => {
+  // Thực hiện các hàm bên trong nếu cần
+};

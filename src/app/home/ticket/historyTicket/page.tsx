@@ -195,11 +195,6 @@ export default function HistoryTicketPage() {
             </span>
           ),
           priceColor: "text-blue-600",
-          button: (
-            <button className="bg-[#1677FF] hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-xs font-bold transition-all shadow-sm shadow-blue-500/30">
-              Xem chi tiết
-            </button>
-          ),
         };
 
       case "PENDING":
@@ -225,11 +220,15 @@ export default function HistoryTicketPage() {
             </span>
           ),
           priceColor: "text-slate-400",
-          button: (
-            <button className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-6 py-2 rounded-lg text-xs font-bold transition-all">
-              Chi tiết hủy
-            </button>
+        };
+      case "COMPLETED":
+        return {
+          badge: (
+            <span className="bg-blue-400 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+              Hoàn Thành
+            </span>
           ),
+          priceColor: "text-slate-400",
         };
 
       default:
@@ -323,6 +322,12 @@ export default function HistoryTicketPage() {
                       </p>
                       <h3 className="text-lg font-black text-slate-800">#{bookingCode}</h3>
                     </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                        MÃ LỊCH TRÌNH
+                      </p>
+                      <h3 className="text-lg font-black text-slate-800">{ticket.planCode}</h3>
+                    </div>
 
                     <div>{config.badge}</div>
                   </div>
@@ -378,11 +383,11 @@ export default function HistoryTicketPage() {
 
                   <div className="flex justify-between items-end border-t border-slate-100 pt-5 mt-auto">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 mb-1">
-                        Ngày đặt: {formatDate(bookingDate)}
-                      </p>
+                      {/* <p className="text-[10px] font-bold text-slate-400 mb-1">
+                        Ngày đặt: {ticket.createdAt}
+                      </p> */}
                       <p className={`text-2xl font-black ${config.priceColor}`}>
-                        {formatMoney(ticket.totalAmount)}
+                        TỔNG GIÁ TRỊ: {formatMoney(ticket.totalAmount)}
                       </p>
                     </div>
 
