@@ -6,6 +6,8 @@ export interface AccountRole {
   name: string;
 }
 
+export type AccountStatus = "ACTIVE" | "INACTIVE";
+
 export interface Account {
   isActive: boolean;
   createdAt: string;
@@ -17,7 +19,7 @@ export interface Account {
   phone: string;
   role: AccountRole;
   branchId: number;
-  status: string;
+  status: AccountStatus;
 }
 
 export interface AccountResponse {
@@ -47,4 +49,37 @@ export interface ChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+export interface UpdateAccountStatusPayload {
+  status: AccountStatus;
+}
+
+export interface UpdateAccountStatusResponse {
+  accountId: number;
+  fullName: string;
+  email: string;
+  oldStatus: AccountStatus;
+  newStatus: AccountStatus;
+}
+
+export type CreateEmployeeRoleName = "admin" | "manager" | "staff";
+
+export interface CreateEmployeePayload {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  roleName: CreateEmployeeRoleName;
+  branchId: number;
+}
+
+export interface CreateEmployeeResponse {
+  accountId: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  roleName: string;
+  branchId: number;
+  status: AccountStatus;
 }

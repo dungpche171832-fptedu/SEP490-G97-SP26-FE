@@ -13,11 +13,20 @@
   --font-sans: var(--font-app);
 }
 
+html {
+  font-size: 16.5px;
+}
+
 html,
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--app-font-family) !important;
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.55;
 }
 
 body,
@@ -41,4 +50,73 @@ select,
 .ant-message,
 .ant-notification {
   font-family: var(--app-font-family) !important;
+}
+
+button,
+input,
+textarea,
+select,
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-table,
+.ant-pagination,
+.ant-modal,
+.ant-dropdown,
+.ant-menu,
+.ant-form {
+  font-size: 0.96rem;
+}
+
+.admin-content {
+  font-size: 1rem;
+}
+
+.admin-content .text-xs {
+  font-size: 0.85rem !important;
+  line-height: 1.25rem !important;
+}
+
+.admin-content .text-sm {
+  font-size: 0.97rem !important;
+  line-height: 1.45rem !important;
+}
+
+.admin-content .text-\[10px\] {
+  font-size: 0.78rem !important;
+}
+
+.admin-content .text-\[11px\] {
+  font-size: 0.82rem !important;
+}
+
+.admin-content .text-\[12px\] {
+  font-size: 0.88rem !important;
+}
+
+.admin-content .text-\[13px\] {
+  font-size: 0.95rem !important;
+}
+
+.admin-content .text-\[14px\] {
+  font-size: 1rem !important;
+}
+
+.admin-content .ant-table {
+  font-size: 0.96rem !important;
+}
+
+.admin-content .ant-table-thead > tr > th,
+.admin-content .ant-table-tbody > tr > td {
+  font-size: 0.95rem !important;
+}
+
+.admin-content input,
+.admin-content select,
+.admin-content textarea,
+.admin-content button,
+.admin-content .ant-btn,
+.admin-content .ant-input,
+.admin-content .ant-select {
+  font-size: 0.96rem !important;
 }

@@ -13,9 +13,8 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 
-// import Sidebar from "@/components/admin/Sidebar";
-// import Header from "@/components/admin/Header";
-import { getCars, getBranchesForSelect, Car, Branch } from "@/services/carService";
+import type { Car } from "@/model/car";
+import { getCars, getBranchesForSelect, Branch } from "@/services/carService";
 
 // 🔴 Hàm mô phỏng lấy thông tin User đang đăng nhập.
 // Duy cần thay thế logic này bằng Context hoặc Redux để lấy user thật sau login.
@@ -105,8 +104,8 @@ export default function CarManagementPage() {
             </p>
           </div>
 
-          {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Thêm xe */}
-          {isManager && (
+          {/* ✅ Cập nhật: Cả Manager và Admin đều thấy nút Thêm xe */}
+          {(isManager || isAdmin) && (
             <Link href="/admin/car/add">
               <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
                 <PlusOutlined /> Thêm xe
@@ -127,7 +126,7 @@ export default function CarManagementPage() {
             />
           </div>
 
-          {/* ✅ PHÂN QUYỀN: Chỉ Admin mới thấy bộ lọc Chi nhánh */}
+          {/* Chỉ Admin mới thấy bộ lọc Chi nhánh */}
           {isAdmin && (
             <div className="relative min-w-[220px]">
               <select
@@ -162,7 +161,7 @@ export default function CarManagementPage() {
             {filteredCars.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {currentCars.map((car) => (
-                  // ✅ Truyền userRole xuống Card để xử lý nút Sửa/Xóa
+                  // Truyền userRole xuống Card để xử lý nút Sửa/Xóa
                   <CarCard key={car.id} car={car} userRole={user?.role} />
                 ))}
               </div>
@@ -244,7 +243,7 @@ export default function CarManagementPage() {
   );
 }
 
-// ✅ Cập nhật Component CarCard để nhận prop userRole
+// Component CarCard nhận prop userRole
 function CarCard({ car, userRole }: { car: Car; userRole?: string }) {
   const formatPlate = (plate: string) => {
     if (!plate) return "—";
@@ -321,8 +320,7 @@ function CarCard({ car, userRole }: { car: Car; userRole?: string }) {
             <EyeOutlined className="text-[18px]" />
           </Link>
 
-          {/* ✅ PHÂN QUYỀN: Chỉ Manager mới thấy nút Sửa/Xóa */}
-          {userRole === "MANAGER_BRANCH" && (
+          {(userRole === "MANAGER" || userRole === "ADMIN") && (
             <>
               <Link
                 href={`/admin/car/edit?id=${car.id}`}

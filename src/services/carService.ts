@@ -59,12 +59,14 @@ export type Branch = CarBranch;
 export type CarResponse = CarListResponse;
 
 export type CarType =
+  | "SEAT_9"
+  | "SEAT_16"
+  | "SEAT_29"
+  | "SEAT_45"
   | "LIMOUSINE_9"
   | "LIMOUSINE_11"
   | "SLEEPER_22"
-  | "SLEEPER_34"
-  | "SEAT_16"
-  | "SEAT_29";
+  | "SLEEPER_34";
 
 export type CarStatus = "RUNNING" | "STOP" | "MAINTENANCE";
 
@@ -109,6 +111,11 @@ interface BranchListResponse {
   result?: CarBranch[];
 }
 
+interface ApiResponseWrapper<T> {
+  result?: T;
+  data?: T;
+}
+
 /* ================= HELPERS ================= */
 
 function extractBranches(responseBody: BranchListResponse | CarBranch[]): CarBranch[] {
@@ -117,6 +124,24 @@ function extractBranches(responseBody: BranchListResponse | CarBranch[]): CarBra
   }
 
   return responseBody.branches || responseBody.data || responseBody.result || [];
+}
+
+function isApiResponseWrapper<T>(value: unknown): value is ApiResponseWrapper<T> {
+  return typeof value === "object" && value !== null && ("result" in value || "data" in value);
+}
+
+function unwrapApiResponse<T>(responseBody: T | ApiResponseWrapper<T>): T {
+  if (isApiResponseWrapper<T>(responseBody)) {
+    if (responseBody.result !== undefined) {
+      return responseBody.result;
+    }
+
+    if (responseBody.data !== undefined) {
+      return responseBody.data;
+    }
+  }
+
+  return responseBody as T;
 }
 
 /* ================= API ================= */
@@ -163,6 +188,7 @@ export const getCarsByCurrentManagerBranch = async (): Promise<Car[]> => {
 
 export const addCar = async (data: CarAddRequest): Promise<CarAddResponse> => {
   const response = await axiosInstance.post<CarAddResponse>("/api/cars", data);
+
   return response.data;
 };
 
@@ -185,5 +211,30 @@ export const getCarDetail = async (id: string | number): Promise<CarViewResponse
   } catch (error: unknown) {
     console.error("Lỗi lấy chi tiết xe:", error);
     return null;
+  }
+};
+
+export const getCarById = async (id: string | number): Promise<Car> => {
+  try {
+    const response = await axiosInstance.get<Car | ApiResponseWrapper<Car>>(`/api/cars/cars/${id}`);
+
+    return unwrapApiResponse<Car>(response.data);
+  } catch (error: unknown) {
+    console.error(`Lỗi lấy thông tin xe ID ${id}:`, error);
+    throw error;
+  }
+};
+
+export const updateCar = async (id: string | number, data: CarAddRequest): Promise<Car> => {
+  try {
+    const response = await axiosInstance.put<Car | ApiResponseWrapper<Car>>(
+      `/api/cars/${id}`,
+      data,
+    );
+
+    return unwrapApiResponse<Car>(response.data);
+  } catch (error: unknown) {
+    console.error(`Lỗi cập nhật xe ID ${id}:`, error);
+    throw error;
   }
 };

@@ -86,6 +86,29 @@ export const getRouteTableItems = async (): Promise<RouteTableItem[]> => {
 
   return mapRoutesToTableItems(routes);
 };
+const normalizeRouteResponse = (route: RouteResponse): RouteResponse => {
+  return {
+    ...route,
+    routeRevertId: route.routeRevertId ?? null,
+    stations: [...route.stations].sort(
+      (firstStation, secondStation) => firstStation.order - secondStation.order,
+    ),
+  };
+};
+
+export const updateRoute = async (
+  routeId: number,
+  payload: UpdateRoutePayload,
+): Promise<RouteResponse> => {
+  try {
+    const response = await routeClient.put<RouteResponse>(`/api/routes/${routeId}`, payload);
+
+    return normalizeRouteResponse(response.data);
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, "Không thể cập nhật tuyến đường"));
+  }
+};
+
 export const updateRouteName = async (
   routeId: number,
   currentRoute: RouteResponse,
@@ -96,21 +119,13 @@ export const updateRouteName = async (
     name: newName.trim(),
     stations: [...currentRoute.stations]
       .sort((firstStation, secondStation) => firstStation.order - secondStation.order)
-      .map((station) => ({
+      .map((station, index) => ({
         stationId: station.stationId,
-        order: station.order,
+        order: index + 1,
       })),
   };
 
-  const response = await routeClient.put<RouteResponse>(`/api/routes/${routeId}`, payload);
-
-  return {
-    ...response.data,
-    routeRevertId: response.data.routeRevertId ?? null,
-    stations: [...response.data.stations].sort(
-      (firstStation, secondStation) => firstStation.order - secondStation.order,
-    ),
-  };
+  return updateRoute(routeId, payload);
 };
 
 export const createRoute = async (payload: CreateRoutePayload): Promise<RouteResponse> => {

@@ -322,6 +322,7 @@ export default function PlanManagementPage() {
       dataIndex: "status",
       key: "status",
       align: "center",
+      width: 170,
       render: (status: PlanStatus) => {
         let bgColor = "#F1F5F9";
         let textColor = "#64748B";
@@ -348,7 +349,7 @@ export default function PlanManagementPage() {
 
         return (
           <Tag
-            className="rounded-full border-none px-4 py-0.5 font-medium"
+            className="rounded-full border-none px-4 py-1 text-[15px] font-semibold"
             color={bgColor}
             style={{ color: textColor }}
           >

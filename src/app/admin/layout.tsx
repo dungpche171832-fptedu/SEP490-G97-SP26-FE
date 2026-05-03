@@ -21,7 +21,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Sidebar />
           <Header />
 
-          <main className="ml-64 min-h-screen p-6 pt-16 subpixel-antialiased">{children}</main>
+          <main className="admin-content ml-64 min-h-screen p-6 pt-16 subpixel-antialiased">
+            {children}
+          </main>
         </div>
       </RoleGuard>
     </ConfigProvider>

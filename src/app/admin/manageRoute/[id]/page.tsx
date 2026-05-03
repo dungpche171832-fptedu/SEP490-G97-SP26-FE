@@ -1,20 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Empty, Input, Spin, message } from "antd";
+import { Button, Empty, Input, Select, Spin, message } from "antd";
 import {
+  ArrowDownOutlined,
   ArrowLeftOutlined,
+  ArrowUpOutlined,
   CloseOutlined,
+  DeleteOutlined,
   EditOutlined,
   EnvironmentFilled,
+  PlusOutlined,
   RightOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
 import { useParams, useRouter } from "next/navigation";
-import type { RouteResponse } from "@/model/route";
-import { getRouteDetail, getRoutes, updateRouteName } from "@/services/routeService";
+import type { RouteResponse, RouteStation, UpdateRoutePayload } from "@/model/route";
+import { getRouteDetail, getRoutes, updateRoute } from "@/services/routeService";
+import { getStations, type Station } from "@/services/station.service";
 
 type StationType = "departure" | "waypoint" | "arrival";
+
+interface EditableRouteStation extends RouteStation {
+  stationCode?: string;
+  address?: string;
+  cityName?: string;
+}
 
 const getStationType = (index: number, total: number): StationType => {
   if (index === 0) {
@@ -40,6 +51,21 @@ const getStationLabel = (type: StationType): string => {
   return "ĐIỂM TRUNG CHUYỂN (WAY)";
 };
 
+const toEditableStations = (stations: RouteStation[]): EditableRouteStation[] => {
+  return [...stations]
+    .sort((firstStation, secondStation) => firstStation.order - secondStation.order)
+    .map((station, index) => ({
+      ...station,
+      order: index + 1,
+    }));
+};
+
+const getStationSubText = (station: EditableRouteStation): string => {
+  const values = [station.stationCode, station.address, station.cityName].filter(Boolean);
+
+  return values.join(" • ");
+};
+
 export default function ManageRouteDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -47,11 +73,26 @@ export default function ManageRouteDetailPage() {
   const [routeDetail, setRouteDetail] = useState<RouteResponse | null>(null);
   const [reverseRouteCode, setReverseRouteCode] = useState("Chưa có");
   const [loading, setLoading] = useState(true);
-  const [isEditingName, setIsEditingName] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
   const [routeNameInput, setRouteNameInput] = useState("");
+  const [editableStations, setEditableStations] = useState<EditableRouteStation[]>([]);
+  const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
+
+  const [stationOptions, setStationOptions] = useState<Station[]>([]);
+  const [loadingStations, setLoadingStations] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const routeId = useMemo(() => Number(params.id), [params.id]);
+
+  const stationCount = isEditing ? editableStations.length : routeDetail?.stations.length || 0;
+
+  const selectOptions = useMemo(() => {
+    return stationOptions.map((station) => ({
+      value: station.id,
+      label: `${station.code} - ${station.name}${station.address ? ` - ${station.address}` : ""}`,
+    }));
+  }, [stationOptions]);
 
   useEffect(() => {
     const fetchRouteDetail = async () => {
@@ -70,6 +111,7 @@ export default function ManageRouteDetailPage() {
 
         setRouteDetail(detail);
         setRouteNameInput(detail.name);
+        setEditableStations(toEditableStations(detail.stations));
         setReverseRouteCode(reverseRoute?.code || "Chưa có");
       } catch (error) {
         const errorMessage =
@@ -84,21 +126,123 @@ export default function ManageRouteDetailPage() {
     void fetchRouteDetail();
   }, [routeId]);
 
-  const handleStartEditName = () => {
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        setLoadingStations(true);
+
+        const response = await getStations();
+        setStationOptions(response.stations || []);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Không thể tải danh sách điểm dừng";
+
+        message.error(errorMessage);
+      } finally {
+        setLoadingStations(false);
+      }
+    };
+
+    void fetchStations();
+  }, []);
+
+  const handleStartEdit = () => {
     if (!routeDetail) {
       return;
     }
 
     setRouteNameInput(routeDetail.name);
-    setIsEditingName(true);
+    setEditableStations(toEditableStations(routeDetail.stations));
+    setSelectedStationId(null);
+    setIsEditing(true);
   };
 
-  const handleCancelEditName = () => {
-    setRouteNameInput(routeDetail?.name || "");
-    setIsEditingName(false);
+  const handleCancelEdit = () => {
+    if (!routeDetail) {
+      return;
+    }
+
+    setRouteNameInput(routeDetail.name);
+    setEditableStations(toEditableStations(routeDetail.stations));
+    setSelectedStationId(null);
+    setIsEditing(false);
   };
 
-  const handleSaveRouteName = async () => {
+  const handleAddStation = () => {
+    if (!selectedStationId) {
+      message.error("Vui lòng chọn điểm dừng cần thêm");
+      return;
+    }
+
+    const selectedStation = stationOptions.find((station) => station.id === selectedStationId);
+
+    if (!selectedStation) {
+      message.error("Điểm dừng không hợp lệ");
+      return;
+    }
+
+    const isDuplicate = editableStations.some(
+      (station) => station.stationId === selectedStation.id,
+    );
+
+    if (isDuplicate) {
+      message.error("Điểm dừng này đã có trong tuyến");
+      return;
+    }
+
+    setEditableStations((currentStations) => [
+      ...currentStations,
+      {
+        stationId: selectedStation.id,
+        stationName: selectedStation.name,
+        stationCode: selectedStation.code,
+        address: selectedStation.address,
+        cityName: selectedStation.cityName,
+        order: currentStations.length + 1,
+      },
+    ]);
+
+    setSelectedStationId(null);
+  };
+
+  const handleRemoveStation = (stationId: number) => {
+    setEditableStations((currentStations) =>
+      currentStations
+        .filter((station) => station.stationId !== stationId)
+        .map((station, index) => ({
+          ...station,
+          order: index + 1,
+        })),
+    );
+  };
+
+  const handleMoveStation = (index: number, direction: "up" | "down") => {
+    setEditableStations((currentStations) => {
+      const nextIndex = direction === "up" ? index - 1 : index + 1;
+
+      if (nextIndex < 0 || nextIndex >= currentStations.length) {
+        return currentStations;
+      }
+
+      const nextStations = [...currentStations];
+      const currentStation = nextStations[index];
+      const targetStation = nextStations[nextIndex];
+
+      if (!currentStation || !targetStation) {
+        return currentStations;
+      }
+
+      nextStations[index] = targetStation;
+      nextStations[nextIndex] = currentStation;
+
+      return nextStations.map((station, stationIndex) => ({
+        ...station,
+        order: stationIndex + 1,
+      }));
+    });
+  };
+
+  const handleSaveRoute = async () => {
     if (!routeDetail) {
       return;
     }
@@ -110,28 +254,43 @@ export default function ManageRouteDetailPage() {
       return;
     }
 
-    if (newName === routeDetail.name) {
-      setIsEditingName(false);
+    if (editableStations.length < 2) {
+      message.error("Cần ít nhất 2 điểm dừng trong tuyến");
       return;
     }
+
+    const payload: UpdateRoutePayload = {
+      code: routeDetail.code,
+      name: newName,
+      stations: editableStations.map((station, index) => ({
+        stationId: station.stationId,
+        order: index + 1,
+      })),
+    };
 
     try {
       setSaving(true);
 
-      const updatedRoute = await updateRouteName(routeId, routeDetail, newName);
+      const updatedRoute = await updateRoute(routeId, payload);
 
       setRouteDetail(updatedRoute);
       setRouteNameInput(updatedRoute.name);
-      setIsEditingName(false);
-      message.success("Cập nhật tên tuyến thành công");
+      setEditableStations(toEditableStations(updatedRoute.stations));
+      setIsEditing(false);
+      message.success("Cập nhật tuyến đường thành công");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Không thể cập nhật tên tuyến";
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể cập nhật tuyến đường";
 
       message.error(errorMessage);
     } finally {
       setSaving(false);
     }
   };
+
+  const displayedStations = isEditing
+    ? editableStations
+    : toEditableStations(routeDetail?.stations || []);
 
   if (loading) {
     return (
@@ -154,8 +313,6 @@ export default function ManageRouteDetailPage() {
       </main>
     );
   }
-
-  const stationCount = routeDetail.stations.length;
 
   return (
     <main className="min-h-screen bg-[#f7f9fd] px-6 py-6">
@@ -187,11 +344,11 @@ export default function ManageRouteDetailPage() {
               </h1>
             </div>
 
-            {!isEditingName ? (
+            {!isEditing ? (
               <Button
                 type="default"
                 icon={<EditOutlined />}
-                onClick={handleStartEditName}
+                onClick={handleStartEdit}
                 style={{
                   borderColor: "#1267db",
                   color: "#1267db",
@@ -204,7 +361,7 @@ export default function ManageRouteDetailPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   icon={<CloseOutlined />}
-                  onClick={handleCancelEditName}
+                  onClick={handleCancelEdit}
                   disabled={saving}
                   className="h-12 rounded-xl px-6 font-bold"
                 >
@@ -215,7 +372,7 @@ export default function ManageRouteDetailPage() {
                   type="primary"
                   icon={<SaveOutlined />}
                   loading={saving}
-                  onClick={() => void handleSaveRouteName()}
+                  onClick={() => void handleSaveRoute()}
                   className="h-12 rounded-xl bg-[#1267db] px-6 font-bold"
                 >
                   Lưu
@@ -248,11 +405,11 @@ export default function ManageRouteDetailPage() {
                 Tên Tuyến
               </p>
 
-              {isEditingName ? (
+              {isEditing ? (
                 <Input
                   value={routeNameInput}
                   onChange={(event) => setRouteNameInput(event.target.value)}
-                  onPressEnter={() => void handleSaveRouteName()}
+                  onPressEnter={() => void handleSaveRoute()}
                   disabled={saving}
                   maxLength={100}
                   className="h-12 rounded-xl border-[#1267db] font-bold"
@@ -299,6 +456,38 @@ export default function ManageRouteDetailPage() {
             </div>
           </div>
 
+          {isEditing && (
+            <div className="mb-8 rounded-2xl border border-dashed border-[#b7cff5] bg-[#f8fbff] p-5">
+              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.14em] text-[#7d91b0]">
+                Thêm điểm dừng vào tuyến
+              </p>
+
+              <div className="flex flex-col gap-3 md:flex-row">
+                <Select
+                  showSearch
+                  allowClear
+                  value={selectedStationId}
+                  onChange={(value) => setSelectedStationId(value)}
+                  loading={loadingStations}
+                  placeholder="Chọn điểm dừng"
+                  optionFilterProp="label"
+                  options={selectOptions}
+                  className="h-12 flex-1"
+                />
+
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddStation}
+                  disabled={saving}
+                  className="h-12 rounded-xl bg-[#1267db] px-6 font-bold"
+                >
+                  Thêm điểm
+                </Button>
+              </div>
+            </div>
+          )}
+
           {stationCount === 0 ? (
             <Empty description="Tuyến đường chưa có điểm dừng" />
           ) : (
@@ -306,7 +495,7 @@ export default function ManageRouteDetailPage() {
               <div className="absolute left-[15px] top-3 h-[calc(100%-24px)] w-[2px] bg-[#1677ff]" />
 
               <div className="space-y-10">
-                {routeDetail.stations.map((station, index) => {
+                {displayedStations.map((station, index) => {
                   const stationType = getStationType(index, stationCount);
 
                   return (
@@ -314,9 +503,43 @@ export default function ManageRouteDetailPage() {
                       <div className="absolute left-[-74px] top-0 flex h-8 w-8 items-center justify-center rounded-full border-[5px] border-[#1267db] bg-white shadow-[0_4px_14px_rgba(18,103,219,0.22)]" />
 
                       <div className="rounded-3xl bg-[#f8f8fb] px-8 py-7">
-                        <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.12em] text-[#1267db]">
-                          {getStationLabel(stationType)}
-                        </p>
+                        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <p className="m-0 text-xs font-extrabold uppercase tracking-[0.12em] text-[#1267db]">
+                            {getStationLabel(stationType)}
+                          </p>
+
+                          {isEditing && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="small"
+                                icon={<ArrowUpOutlined />}
+                                disabled={index === 0 || saving}
+                                onClick={() => handleMoveStation(index, "up")}
+                              >
+                                Lên
+                              </Button>
+
+                              <Button
+                                size="small"
+                                icon={<ArrowDownOutlined />}
+                                disabled={index === displayedStations.length - 1 || saving}
+                                onClick={() => handleMoveStation(index, "down")}
+                              >
+                                Xuống
+                              </Button>
+
+                              <Button
+                                size="small"
+                                danger
+                                icon={<DeleteOutlined />}
+                                disabled={saving}
+                                onClick={() => handleRemoveStation(station.stationId)}
+                              >
+                                Xóa
+                              </Button>
+                            </div>
+                          )}
+                        </div>
 
                         <h3 className="m-0 text-[21px] font-extrabold text-[#1f2430]">
                           <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#1f2430] text-sm font-extrabold">
@@ -325,9 +548,15 @@ export default function ManageRouteDetailPage() {
                           {station.stationName}
                         </h3>
 
-                        <p className="mt-3 text-base italic text-[#7a879b]">
-                          Thứ tự điểm dừng: {station.order}
-                        </p>
+                        {getStationSubText(station) ? (
+                          <p className="mt-3 text-base italic text-[#7a879b]">
+                            {getStationSubText(station)}
+                          </p>
+                        ) : (
+                          <p className="mt-3 text-base italic text-[#7a879b]">
+                            Thứ tự điểm dừng: {index + 1}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
