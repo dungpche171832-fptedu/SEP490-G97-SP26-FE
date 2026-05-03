@@ -124,22 +124,21 @@ export default function ManageRoutePage() {
 
       <section className="overflow-hidden rounded-[28px] border border-[#edf2f7] bg-white shadow-[0_12px_35px_rgba(15,23,42,0.04)]">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[950px] table-fixed border-collapse">
+          <table className="w-full min-w-[850px] table-fixed border-collapse">
             <thead>
               <tr className="h-[72px] bg-[#f8fbff] text-left text-xs font-bold uppercase tracking-[0.18em] text-[#71809a]">
-                <th className="w-[10%] px-8 text-center">ID</th>
-                <th className="w-[16%] px-8">Mã Tuyến</th>
-                <th className="w-[28%] px-8">Tên Tuyến</th>
-                <th className="w-[18%] px-8">Tuyến Ngược</th>
+                <th className="w-[18%] px-8">Mã Tuyến</th>
+                <th className="w-[32%] px-8">Tên Tuyến</th>
+                <th className="w-[20%] px-8">Tuyến Ngược</th>
                 <th className="w-[14%] px-8 text-center">Số Trạm</th>
-                <th className="w-[14%] px-8 text-center">Quản Lý</th>
+                <th className="w-[16%] px-8 text-center">Quản Lý</th>
               </tr>
             </thead>
 
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="h-[320px] text-center">
+                  <td colSpan={5} className="h-[320px] text-center">
                     <Spin />
                   </td>
                 </tr>
@@ -147,7 +146,7 @@ export default function ManageRoutePage() {
 
               {!loading && errorMessage && (
                 <tr>
-                  <td colSpan={6} className="h-[320px] px-8 text-center">
+                  <td colSpan={5} className="h-[320px] px-8 text-center">
                     <div className="text-sm font-medium text-red-500">{errorMessage}</div>
                   </td>
                 </tr>
@@ -155,7 +154,7 @@ export default function ManageRoutePage() {
 
               {!loading && !errorMessage && paginatedRoutes.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="h-[320px] px-8 text-center">
+                  <td colSpan={5} className="h-[320px] px-8 text-center">
                     <Empty description="Không có tuyến đường phù hợp" />
                   </td>
                 </tr>
@@ -168,8 +167,6 @@ export default function ManageRoutePage() {
                     key={route.id}
                     className="h-[86px] border-t border-[#f0f4f8] text-sm text-[#172033]"
                   >
-                    <td className="px-8 text-center font-medium text-[#63748e]">{route.id}</td>
-
                     <td className="px-8">
                       <span className="inline-flex rounded-md bg-[#eaf4ff] px-3 py-2 text-xs font-bold text-[#1677ff]">
                         {route.code}

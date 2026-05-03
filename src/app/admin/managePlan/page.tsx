@@ -36,6 +36,8 @@ interface PlanTableItem {
   status: PlanStatus;
 }
 
+type PlanScopeFilter = "ALL" | "MINE";
+
 function formatDateTime(value: string): string {
   if (!value) return "-";
 
@@ -150,6 +152,7 @@ export default function PlanManagementPage() {
 
   const currentRole = getRole()?.replace("ROLE_", "").toLowerCase() || "";
   const canCreatePlan = currentRole === "admin" || currentRole === "manager";
+  const shouldShowScopeFilter = currentRole === "manager" || currentRole === "staff";
 
   const [currentAccountId, setCurrentAccountId] = useState<number | undefined>(undefined);
   const [currentBranchId, setCurrentBranchId] = useState<number | undefined>(undefined);
@@ -158,6 +161,9 @@ export default function PlanManagementPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<PlanStatus | "ALL">("ALL");
+  const [scopeFilter, setScopeFilter] = useState<PlanScopeFilter>(
+    currentRole === "manager" || currentRole === "staff" ? "MINE" : "ALL",
+  );
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const pageSize = 10;
@@ -239,6 +245,22 @@ export default function PlanManagementPage() {
     return plans.filter((item) => {
       const matchesStatus = statusFilter === "ALL" || item.status === statusFilter;
 
+      const matchesScope = (() => {
+        if (scopeFilter === "ALL") {
+          return true;
+        }
+
+        if (currentRole === "staff") {
+          return currentAccountId !== undefined && item.accountId === currentAccountId;
+        }
+
+        if (currentRole === "manager") {
+          return currentBranchId !== undefined && item.branchId === currentBranchId;
+        }
+
+        return true;
+      })();
+
       const matchesKeyword =
         !keyword ||
         item.code.toLowerCase().includes(keyword) ||
@@ -248,9 +270,17 @@ export default function PlanManagementPage() {
         item.startStation.toLowerCase().includes(keyword) ||
         item.endStation.toLowerCase().includes(keyword);
 
-      return matchesStatus && matchesKeyword;
+      return matchesScope && matchesStatus && matchesKeyword;
     });
-  }, [plans, searchText, statusFilter]);
+  }, [
+    plans,
+    searchText,
+    statusFilter,
+    scopeFilter,
+    currentRole,
+    currentAccountId,
+    currentBranchId,
+  ]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -260,7 +290,7 @@ export default function PlanManagementPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, scopeFilter]);
 
   const canEditPlan = (record: PlanTableItem): boolean => {
     if (currentRole === "admin") {
@@ -442,6 +472,27 @@ export default function PlanManagementPage() {
                 { value: "COMPLETE", label: "Hoàn thành" },
               ]}
             />
+
+            {shouldShowScopeFilter && (
+              <Select<PlanScopeFilter>
+                value={scopeFilter}
+                onChange={(value: PlanScopeFilter) => setScopeFilter(value)}
+                className="h-11 w-full sm:w-64"
+                options={[
+                  {
+                    value: "MINE",
+                    label:
+                      currentRole === "staff"
+                        ? "Lịch trình của tôi"
+                        : "Lịch trình chi nhánh của tôi",
+                  },
+                  {
+                    value: "ALL",
+                    label: "Tất cả lịch trình",
+                  },
+                ]}
+              />
+            )}
           </div>
 
           <Button
