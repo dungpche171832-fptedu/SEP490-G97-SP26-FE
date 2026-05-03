@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { Button, DatePicker, Select, message, Carousel } from "antd";
-import type { CarouselRef } from "antd";
 import {
   SafetyCertificateOutlined,
   ClockCircleOutlined,
@@ -25,8 +24,8 @@ export default function HomePage() {
   const [travelDate, setTravelDate] = useState<string | null>(null);
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
 
-  // Khởi tạo ref với kiểu CarouselRef
-  const carouselRef = useRef<CarouselRef>(null);
+  // Khởi tạo ref với kiểu React.ElementRef<typeof Carousel> chuẩn TypeScript
+  const carouselRef = useRef<React.ElementRef<typeof Carousel>>(null);
 
   useEffect(() => {
     const loadStations = async (): Promise<void> => {
@@ -216,7 +215,7 @@ export default function HomePage() {
 
       <section className="bg-white py-16 w-full">
         <div className="max-w-[1440px] mx-auto px-6 md:px-10">
-          <h2 className="text-4xl font-bold text-slate-900 mb-12 text-center">Tin tức nổi bật</h2>
+          <h2 className="text-4xl font-bold text-slate-900 mb-12 text-center">Tin tức mới</h2>
           {newsList.length > 0 ? (
             <div className="flex items-center gap-6 md:gap-10">
               {renderCustomArrow("prev")}
