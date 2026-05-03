@@ -13,6 +13,7 @@ import {
 } from "@ant-design/icons";
 import { Input, Modal, Pagination, Select, Spin, message } from "antd";
 import type { AccountStatus } from "@/model/account";
+import { getAccountInfo } from "@/services/accountService";
 import {
   getAllEmployees,
   updateEmployeeStatus,
@@ -147,10 +148,34 @@ const getCurrentUserEmail = (): string => {
   return localStorage.getItem("email")?.trim().toLowerCase() || "";
 };
 
+const getCurrentRole = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return localStorage.getItem("role")?.replace("ROLE_", "").toLowerCase() || "";
+};
+
+const toNumberOrNull = (value: unknown): number | null => {
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsedValue = Number(value);
+
+    return Number.isNaN(parsedValue) ? null : parsedValue;
+  }
+
+  return null;
+};
+
 export default function EmployeePage() {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [currentRole, setCurrentRole] = useState("");
+  const [currentBranchId, setCurrentBranchId] = useState<number | null>(null);
 
   const [keyword, setKeyword] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -165,6 +190,19 @@ export default function EmployeePage() {
 
   useEffect(() => {
     setCurrentUserEmail(getCurrentUserEmail());
+    setCurrentRole(getCurrentRole());
+
+    const fetchCurrentAccountInfo = async () => {
+      try {
+        const accountInfo = await getAccountInfo();
+        setCurrentBranchId(toNumberOrNull(accountInfo.branchId));
+      } catch (error) {
+        console.error("Không lấy được thông tin tài khoản hiện tại:", error);
+        setCurrentBranchId(null);
+      }
+    };
+
+    void fetchCurrentAccountInfo();
   }, []);
 
   useEffect(() => {
@@ -186,6 +224,11 @@ export default function EmployeePage() {
   }, []);
 
   const handleStartEditStatus = (employee: EmployeeItem) => {
+    if (currentRole !== "admin") {
+      message.error("Bạn không có quyền cập nhật trạng thái tài khoản");
+      return;
+    }
+
     setEditingAccountId(employee.accountId);
     setEditingStatus(getAccountStatusValue(employee));
   };
@@ -196,6 +239,11 @@ export default function EmployeePage() {
   };
 
   const handleSaveEmployeeStatus = (employee: EmployeeItem) => {
+    if (currentRole !== "admin") {
+      message.error("Bạn không có quyền cập nhật trạng thái tài khoản");
+      return;
+    }
+
     const currentStatus = getAccountStatusValue(employee);
 
     if (!editingStatus) {
@@ -270,6 +318,20 @@ export default function EmployeePage() {
         return false;
       }
 
+      if (currentRole === "manager") {
+        if (currentBranchId === null) {
+          return false;
+        }
+
+        if (Number(employee.branchId) !== currentBranchId) {
+          return false;
+        }
+      }
+
+      if (currentRole !== "admin" && currentRole !== "manager") {
+        return false;
+      }
+
       const normalizedKeyword = keyword.trim().toLowerCase();
       const roleName = normalizeRoleName(employee.role?.name);
       const status = getStatusLabel(employee).toLowerCase();
@@ -285,11 +347,19 @@ export default function EmployeePage() {
 
       return matchKeyword && matchRole && matchStatus;
     });
-  }, [employees, keyword, roleFilter, statusFilter, currentUserEmail]);
+  }, [
+    employees,
+    keyword,
+    roleFilter,
+    statusFilter,
+    currentUserEmail,
+    currentRole,
+    currentBranchId,
+  ]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [keyword, roleFilter, statusFilter, currentUserEmail]);
+  }, [keyword, roleFilter, statusFilter, currentUserEmail, currentRole, currentBranchId]);
 
   const paginatedEmployees = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -322,12 +392,14 @@ export default function EmployeePage() {
             </p>
           </div>
 
-          <Link href="/admin/employees/addEmployee">
-            <button className="flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-bold !text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 [&_*]:!text-white">
-              <PlusOutlined />
-              Thêm nhân viên
-            </button>
-          </Link>
+          {currentRole === "admin" && (
+            <Link href="/admin/employees/addEmployee">
+              <button className="flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-bold !text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 [&_*]:!text-white">
+                <PlusOutlined />
+                Thêm nhân viên
+              </button>
+            </Link>
+          )}
         </section>
 
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.04)]">
@@ -515,7 +587,7 @@ export default function EmployeePage() {
                           </td>
 
                           <td className="px-7 py-5">
-                            {isEditingThisRow ? (
+                            {isEditingThisRow && currentRole === "admin" ? (
                               <Select<AccountStatus>
                                 size="middle"
                                 value={editingStatus}
@@ -550,35 +622,36 @@ export default function EmployeePage() {
                                 </button>
                               </Link>
 
-                              {isEditingThisRow ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    disabled={isUpdating}
-                                    onClick={() => handleSaveEmployeeStatus(employee)}
-                                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold !text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
-                                  >
-                                    Lưu
-                                  </button>
+                              {currentRole === "admin" &&
+                                (isEditingThisRow ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={isUpdating}
+                                      onClick={() => handleSaveEmployeeStatus(employee)}
+                                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold !text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
+                                    >
+                                      Lưu
+                                    </button>
 
+                                    <button
+                                      type="button"
+                                      disabled={isUpdating}
+                                      onClick={handleCancelEditStatus}
+                                      className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50"
+                                    >
+                                      Hủy
+                                    </button>
+                                  </>
+                                ) : (
                                   <button
                                     type="button"
-                                    disabled={isUpdating}
-                                    onClick={handleCancelEditStatus}
-                                    className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50"
+                                    onClick={() => handleStartEditStatus(employee)}
+                                    className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold !text-white transition-all hover:bg-blue-700"
                                   >
-                                    Hủy
+                                    Sửa
                                   </button>
-                                </>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartEditStatus(employee)}
-                                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold !text-white transition-all hover:bg-blue-700"
-                                >
-                                  Sửa
-                                </button>
-                              )}
+                                ))}
                             </div>
                           </td>
                         </tr>
