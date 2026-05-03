@@ -427,6 +427,31 @@ export default function PlanDetailPage() {
     }
   };
 
+  const handleConfirmStaffStatusChange = (status: "RUNNING" | "COMPLETE") => {
+    const currentPlanStatus = planDetail?.status;
+
+    if (status === "RUNNING" && currentPlanStatus !== "ACTIVE") {
+      message.warning("Chỉ có thể bắt đầu lịch trình đang ở trạng thái Hoạt động");
+      return;
+    }
+
+    if (status === "COMPLETE" && currentPlanStatus !== "RUNNING") {
+      message.warning("Chỉ có thể hoàn thành lịch trình đang ở trạng thái Đang chạy");
+      return;
+    }
+
+    Modal.confirm({
+      title:
+        status === "RUNNING" ? "Xác nhận bắt đầu lịch trình?" : "Xác nhận hoàn thành lịch trình?",
+      content:
+        status === "RUNNING"
+          ? "Sau khi xác nhận, lịch trình sẽ chuyển sang trạng thái Đang chạy."
+          : "Sau khi xác nhận, lịch trình sẽ chuyển sang trạng thái Hoàn thành.",
+      okText: status === "RUNNING" ? "Bắt đầu" : "Hoàn thành",
+      cancelText: "Hủy",
+      onOk: () => handleUpdateStatus(status),
+    });
+  };
   const orderedStations = useMemo(() => {
     return getSortedStations(planDetail?.stations);
   }, [planDetail]);
@@ -529,7 +554,8 @@ export default function PlanDetailPage() {
                     type="primary"
                     size="large"
                     loading={updatingStatus}
-                    onClick={() => handleUpdateStatus("RUNNING")}
+                    disabled={currentStatus !== "ACTIVE"}
+                    onClick={() => handleConfirmStaffStatusChange("RUNNING")}
                     className="!rounded-xl !border-0 !bg-[#1570EF] !font-semibold hover:!bg-[#175CD3]"
                   >
                     Bắt đầu
@@ -539,7 +565,8 @@ export default function PlanDetailPage() {
                     type="primary"
                     size="large"
                     loading={updatingStatus}
-                    onClick={() => handleUpdateStatus("COMPLETE")}
+                    disabled={currentStatus !== "RUNNING"}
+                    onClick={() => handleConfirmStaffStatusChange("COMPLETE")}
                     className="!rounded-xl !border-0 !bg-[#16A34A] !font-semibold hover:!bg-[#15803D]"
                   >
                     Hoàn thành

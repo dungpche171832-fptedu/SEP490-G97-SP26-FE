@@ -140,7 +140,7 @@ export default function EmployeePage() {
           </div>
 
           <Link href="/admin/employee/add">
-            <button className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-200 text-sm">
+            <button className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 !text-white [&_*]:!text-white font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-200 text-sm">
               <PlusOutlined />
               Thêm nhân viên
             </button>
@@ -284,13 +284,13 @@ export default function EmployeePage() {
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <Link href={`/admin/employee/view?id=${employee.accountId}`}>
-                                <button className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all">
+                                <button className="px-3 py-2 rounded-lg bg-blue-600 !text-white hover:bg-blue-700 text-sm font-medium transition-all">
                                   Chi tiết
                                 </button>
                               </Link>
 
                               <Link href={`/admin/employee/edit?id=${employee.accountId}`}>
-                                <button className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all">
+                                <button className="px-3 py-2 rounded-lg bg-blue-600 !text-white hover:bg-blue-700 text-sm font-medium transition-all">
                                   Sửa
                                 </button>
                               </Link>

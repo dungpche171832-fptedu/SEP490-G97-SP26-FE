@@ -32,6 +32,7 @@
   font-weight: 500;
   height: 40px;
   padding: 0 20px;
+  color: #fff !important;
 }
 
 .addButton:hover {

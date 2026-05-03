@@ -78,7 +78,7 @@ export default function BranchPage() {
           {/* Chỉ ADMIN mới thấy nút Thêm chi nhánh */}
           {userRole === "ADMIN" && (
             <Link href="/admin/branch/add">
-              <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+              <button className="bg-[#1677FF] hover:bg-blue-600 !text-white [&_*]:!text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
                 <PlusOutlined /> Thêm chi nhánh
               </button>
             </Link>
@@ -152,7 +152,7 @@ export default function BranchPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs transition-all ${
                           currentPage === page
-                            ? "bg-[#1677FF] text-white shadow-md shadow-blue-200"
+                            ? "bg-white border border-[#1677FF] text-[#1677FF] shadow-sm"
                             : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
                         }`}
                       >

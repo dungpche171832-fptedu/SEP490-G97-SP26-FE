@@ -93,7 +93,7 @@ export default function StationManagementPage() {
 
           {/* Đã bỏ check isAdmin, ai vào cũng thấy nút Thêm */}
           <Link href="/admin/station/add">
-            <button className="bg-[#1677FF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
+            <button className="bg-[#1677FF] hover:bg-blue-600 !text-white [&_*]:!text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-200 text-sm">
               <PlusOutlined /> Thêm điểm dừng
             </button>
           </Link>

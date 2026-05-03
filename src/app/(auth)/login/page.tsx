@@ -52,12 +52,8 @@ const getRedirectPathAfterLogin = (user: unknown): string | null => {
     return "/admin/employees";
   }
 
-  if (role === "manager") {
-    return "/admin/branch";
-  }
-
-  if (role === "staff") {
-    return "/staff";
+  if (role === "manager" || role === "staff") {
+    return "/admin/managePlan";
   }
 
   return null;
