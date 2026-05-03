@@ -31,6 +31,8 @@ const STATUS_OPTIONS: { label: string; value: PlanStatus }[] = [
   { label: "Không hoạt động", value: "INACTIVE" },
 ];
 
+const CHANGE_CAR_STATUS_OPTIONS = ["RUNNING", "STOP", "ACTIVE", "AVAILABLE"];
+
 function formatDate(value?: string): string {
   if (!value) return "--/--/----";
 
@@ -88,7 +90,6 @@ function getStatusClassName(status?: string): string {
       return "!m-0 !w-fit !rounded-full !bg-[#F2F4F7] !px-4 !py-[6px] !text-[14px] !font-semibold !text-[#344054]";
   }
 }
-const CHANGE_CAR_STATUS_OPTIONS = ["RUNNING", "STOP", "ACTIVE", "AVAILABLE"];
 
 function normalizeRoleName(roleName?: string): string {
   return (roleName || "").replace("ROLE_", "").toLowerCase().trim();
@@ -98,15 +99,15 @@ function normalizeStatus(status?: string): string {
   return (status || "").toUpperCase().trim();
 }
 
-async function getCurrentManagerBranchId(): Promise<number> {
+async function getCurrentAccountBranchId(): Promise<number> {
   const currentAccount = await getAccountInfo();
-  const managerBranchId = Number(currentAccount.branchId);
+  const branchId = Number(currentAccount.branchId);
 
-  if (Number.isNaN(managerBranchId)) {
-    throw new Error("Tài khoản Manager chưa có branchId hợp lệ");
+  if (Number.isNaN(branchId)) {
+    throw new Error("Tài khoản hiện tại chưa có branchId hợp lệ");
   }
 
-  return managerBranchId;
+  return branchId;
 }
 
 export default function PlanDetailPage() {
@@ -134,6 +135,7 @@ export default function PlanDetailPage() {
   const [changingCar, setChangingCar] = useState<boolean>(false);
 
   const currentRole = getRole()?.replace("ROLE_", "").toLowerCase() || "";
+  const canChangeVehicleAndDriver = currentRole === "admin" || currentRole === "manager";
 
   useEffect(() => {
     const fetchPlanDetail = async () => {
@@ -160,14 +162,27 @@ export default function PlanDetailPage() {
     };
 
     if (id) {
-      fetchPlanDetail();
+      void fetchPlanDetail();
     }
   }, [id]);
+
+  const getTargetBranchIdForChange = async (): Promise<number> => {
+    if (currentRole === "admin") {
+      const planBranchId = Number(planDetail?.branchId);
+
+      if (!Number.isNaN(planBranchId)) {
+        return planBranchId;
+      }
+    }
+
+    return getCurrentAccountBranchId();
+  };
+
   const fetchDrivers = async () => {
     try {
       setLoadingDrivers(true);
 
-      const managerBranchId = await getCurrentManagerBranchId();
+      const targetBranchId = await getTargetBranchIdForChange();
 
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -198,7 +213,7 @@ export default function PlanDetailPage() {
         const roleName = normalizeRoleName(account.role?.name);
         const status = normalizeStatus(account.status);
 
-        const isSameBranch = accountBranchId === managerBranchId;
+        const isSameBranch = accountBranchId === targetBranchId;
         const isStaffDriver = account.role?.roleId === 3 || roleName === "staff";
         const isActiveStatus = status === "ACTIVE";
 
@@ -225,7 +240,7 @@ export default function PlanDetailPage() {
     try {
       setLoadingCars(true);
 
-      const managerBranchId = await getCurrentManagerBranchId();
+      const targetBranchId = await getTargetBranchIdForChange();
 
       const response: CarListResponse = await getCars();
       const allCars = response.cars || [];
@@ -243,7 +258,7 @@ export default function PlanDetailPage() {
         const carBranchId = Number(car.branch?.id);
         const status = normalizeStatus(car.status);
 
-        const isSameBranch = carBranchId === managerBranchId;
+        const isSameBranch = carBranchId === targetBranchId;
         const isSameCarType = car.carType === currentCarType;
         const canChangePlanCar = CHANGE_CAR_STATUS_OPTIONS.includes(status);
 
@@ -267,6 +282,11 @@ export default function PlanDetailPage() {
   };
 
   const handleOpenDriverModal = async () => {
+    if (!canChangeVehicleAndDriver) {
+      message.error("Bạn không có quyền đổi tài xế");
+      return;
+    }
+
     setSelectedDriverId(planDetail?.accountId);
     setDriverModalOpen(true);
 
@@ -276,6 +296,11 @@ export default function PlanDetailPage() {
   };
 
   const handleOpenCarModal = async () => {
+    if (!canChangeVehicleAndDriver) {
+      message.error("Bạn không có quyền đổi xe");
+      return;
+    }
+
     setSelectedCarId(planDetail?.carId);
     setCarModalOpen(true);
 
@@ -283,11 +308,13 @@ export default function PlanDetailPage() {
       await fetchCars();
     }
   };
+
   const handleGoToTicketList = () => {
     const planId = planDetail?.id ?? id;
 
     router.push(`/admin/manageTicket?planId=${planId}`);
   };
+
   const refreshPlanDetail = async () => {
     if (!id) return;
 
@@ -298,6 +325,11 @@ export default function PlanDetailPage() {
   };
 
   const handleChangeDriver = async () => {
+    if (!canChangeVehicleAndDriver) {
+      message.error("Bạn không có quyền đổi tài xế");
+      return;
+    }
+
     if (!id || selectedDriverId === undefined) {
       message.warning("Vui lòng chọn tài xế mới");
       return;
@@ -335,6 +367,11 @@ export default function PlanDetailPage() {
   };
 
   const handleChangeCar = async () => {
+    if (!canChangeVehicleAndDriver) {
+      message.error("Bạn không có quyền đổi xe");
+      return;
+    }
+
     if (!id || selectedCarId === undefined) {
       message.warning("Vui lòng chọn xe mới");
       return;
@@ -452,9 +489,11 @@ export default function PlanDetailPage() {
       onOk: () => handleUpdateStatus(status),
     });
   };
+
   const orderedStations = useMemo(() => {
     return getSortedStations(planDetail?.stations);
   }, [planDetail]);
+
   const sortedSeats = useMemo(() => {
     return [...(planDetail?.seats || [])].sort((a: PlanSeatResponse, b: PlanSeatResponse) =>
       a.seatNumber.localeCompare(b.seatNumber, undefined, {
@@ -595,6 +634,7 @@ export default function PlanDetailPage() {
               )}
             </div>
           </div>
+
           <div className="flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-end">
             <div className="flex flex-col items-start md:items-end">
               <p className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[#98A2B3]">
@@ -714,13 +754,16 @@ export default function PlanDetailPage() {
                   <h3 className="mt-1 text-[20px] font-extrabold text-[#101828]">
                     Xe #{planDetail.carId}
                   </h3>
-                  <Button
-                    size="small"
-                    onClick={handleOpenCarModal}
-                    className="!mt-3 !rounded-lg !border-[#1570EF] !font-semibold !text-[#1570EF]"
-                  >
-                    Đổi xe
-                  </Button>
+
+                  {canChangeVehicleAndDriver && (
+                    <Button
+                      size="small"
+                      onClick={handleOpenCarModal}
+                      className="!mt-3 !rounded-lg !border-[#1570EF] !font-semibold !text-[#1570EF]"
+                    >
+                      Đổi xe
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -752,13 +795,16 @@ export default function PlanDetailPage() {
                   <h3 className="mt-1 text-[20px] font-extrabold text-[#101828]">
                     {planDetail.driverName || "Chưa có dữ liệu"}
                   </h3>
-                  <Button
-                    size="small"
-                    onClick={handleOpenDriverModal}
-                    className="!mt-3 !rounded-lg !border-[#EA580C] !font-semibold !text-[#EA580C]"
-                  >
-                    Đổi tài xế
-                  </Button>
+
+                  {canChangeVehicleAndDriver && (
+                    <Button
+                      size="small"
+                      onClick={handleOpenDriverModal}
+                      className="!mt-3 !rounded-lg !border-[#EA580C] !font-semibold !text-[#EA580C]"
+                    >
+                      Đổi tài xế
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -845,7 +891,7 @@ export default function PlanDetailPage() {
 
       <Modal
         title="Đổi tài xế cho lịch trình"
-        open={driverModalOpen}
+        open={canChangeVehicleAndDriver && driverModalOpen}
         onCancel={() => setDriverModalOpen(false)}
         onOk={handleChangeDriver}
         confirmLoading={changingDriver}
@@ -873,7 +919,7 @@ export default function PlanDetailPage() {
 
       <Modal
         title="Đổi xe cho lịch trình"
-        open={carModalOpen}
+        open={canChangeVehicleAndDriver && carModalOpen}
         onCancel={() => setCarModalOpen(false)}
         onOk={handleChangeCar}
         confirmLoading={changingCar}
