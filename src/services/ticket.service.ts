@@ -121,6 +121,94 @@ ticketClient.interceptors.request.use((config) => {
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
+interface ApiErrorResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  details?: string | string[];
+}
+
+const getMessageFromResponseData = (data: unknown): string | undefined => {
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (!isRecord(data)) {
+    return undefined;
+  }
+
+  const message = data.message;
+  const error = data.error;
+  const details = data.details;
+
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (Array.isArray(details)) {
+    return details.join(", ");
+  }
+
+  if (typeof details === "string" && details.trim()) {
+    return details;
+  }
+
+  return undefined;
+};
+
+const isErrorLikeMessage = (value: string): boolean => {
+  const normalizedValue = value.toLowerCase();
+
+  return [
+    "lỗi",
+    "thất bại",
+    "không hợp lệ",
+    "không thể",
+    "không tìm thấy",
+    "invalid",
+    "error",
+    "failed",
+    "fail",
+  ].some((keyword) => normalizedValue.includes(keyword));
+};
+
+const getTicketApiErrorMessage = (error: unknown, fallbackMessage: string): string => {
+  if (axios.isAxiosError(error)) {
+    const responseMessage = getMessageFromResponseData(error.response?.data);
+
+    if (responseMessage) {
+      return responseMessage;
+    }
+
+    if (error.response?.status === 400) {
+      return "Dữ liệu vé không hợp lệ";
+    }
+
+    if (error.response?.status === 401) {
+      return "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại";
+    }
+
+    if (error.response?.status === 403) {
+      return "Bạn không có quyền thực hiện chức năng này";
+    }
+
+    if (error.response?.status === 404) {
+      return "Không tìm thấy vé hoặc lịch trình";
+    }
+
+    return error.message || fallbackMessage;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+};
 
 const parseNumberValue = (value: unknown): number | undefined => {
   if (typeof value === "number" && !Number.isNaN(value)) {
@@ -445,14 +533,47 @@ export const changePlan = async (
   payload: ChangePlanRequest,
 ): Promise<ChangePlanResponse> => {
   try {
-    const response = await ticketClient.put<ChangePlanResponse>(
+    const response = await ticketClient.put<ChangePlanResponse | string | undefined>(
       `/ticket/${ticketId}/change-plan`,
       payload,
     );
 
-    return response.data;
-  } catch (error) {
+    const responseData = response.data;
+
+    if (!responseData) {
+      return {
+        success: true,
+        message: "Đổi chuyến thành công",
+      };
+    }
+
+    const responseMessage = getMessageFromResponseData(responseData);
+
+    if (typeof responseData === "string") {
+      if (isErrorLikeMessage(responseData)) {
+        throw new Error(responseData);
+      }
+
+      return {
+        success: true,
+        message: responseData || "Đổi chuyến thành công",
+      };
+    }
+
+    const typedResponseData = responseData as ApiErrorResponse;
+
+    if (typedResponseData.success === false) {
+      throw new Error(responseMessage || "Đổi chuyến thất bại");
+    }
+
+    if (responseMessage && isErrorLikeMessage(responseMessage)) {
+      throw new Error(responseMessage);
+    }
+
+    return responseData;
+  } catch (error: unknown) {
     console.error("Lỗi khi đổi chuyến:", error);
-    throw error;
+
+    throw new Error(getTicketApiErrorMessage(error, "Đổi chuyến thất bại"));
   }
 };
