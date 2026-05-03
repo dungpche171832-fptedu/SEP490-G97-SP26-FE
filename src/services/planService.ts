@@ -23,12 +23,16 @@ type PlanCarForTicket = Car & {
   };
 };
 
+type PlanStationForTicket = PlanStationResponse & {
+  id?: number;
+};
+
 interface PlanDetailForTicket extends PlanDetailResponse {
-  startStation?: PlanStationResponse;
-  start_station?: PlanStationResponse;
-  endStations?: PlanStationResponse[];
-  end_stations?: PlanStationResponse[];
-  allStations?: PlanStationResponse[];
+  startStation?: PlanStationForTicket;
+  start_station?: PlanStationForTicket;
+  endStations?: PlanStationForTicket[];
+  end_stations?: PlanStationForTicket[];
+  allStations?: PlanStationForTicket[];
   listSeats?: PlanSeatResponse[];
   car?: PlanCarForTicket;
   carInfo?: PlanCarForTicket;
@@ -127,7 +131,6 @@ function getBusinessErrorMessage(data: unknown): string | null {
   if (!isRecord(data)) {
     return null;
   }
-
   const code = getStringValue(data, ["code", "errorCode"]);
   const message = getStringValue(data, ["message", "errorMessage", "detail"]);
 
@@ -420,7 +423,7 @@ export const planService = {
       if (stRes.ok) {
         const stData = await stRes.json();
 
-        const stationsList = unwrapApiResponse<PlanStationResponse[]>(stData);
+        const stationsList = unwrapApiResponse<PlanStationForTicket[]>(stData);
 
         if (Array.isArray(stationsList) && stationsList.length > 0) {
           planDetail.startStation = stationsList[0];

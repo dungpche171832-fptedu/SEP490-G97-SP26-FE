@@ -545,7 +545,7 @@ function AddTicketContent() {
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight">Thanh toán vé xe</h3>
             <p className="text-blue-100 text-xs mt-1 opacity-80">Quét mã QR để hoàn tất đặt chỗ</p>
-            <p>Nội dung chuyển khoản vui lòng nhập theo mã số dưới đây</p>
+            <p>Vui lòng nhập nội dung chuyển khoản là số ghế - mã lịch trình</p>
           </div>
           <div className="p-8">
             <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center">

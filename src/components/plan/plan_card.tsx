@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import Image from "next/image";
 import { Plan } from "src/model/plan";
@@ -21,20 +22,18 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
       month: "2-digit",
       year: "numeric",
     });
+
     return { time, day };
   };
 
   const start = formatDateTime(plan.startTime);
-  // const sortedStations = [...plan.stations].sort((a, b) => a.stationOrder - b.stationOrder);
-  // const from = sortedStations[0]?.stationName || "Hà Nội";
-  // const to = sortedStations[sortedStations.length - 1]?.stationName || "Hải Phòng";
   const namePlan = plan.routeName;
   const statusLower = plan.status.toLowerCase();
   const isActive = statusLower === "active" || statusLower === "hoạt động";
   const isPending = statusLower === "pending" || statusLower === "tạm dừng";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-all duration-300">
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
       <div className="relative h-44 overflow-hidden">
         <Image
           src="/images/bus3.png"
@@ -46,12 +45,13 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
       </div>
 
       <div className="p-4">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-blue-500 text-[10px] font-bold uppercase">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase text-blue-500">
             {plan.code || `LT-${plan.id}`}
           </span>
+
           <span
-            className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+            className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
               isActive
                 ? "bg-green-100 text-green-600"
                 : isPending
@@ -63,11 +63,11 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="font-bold text-slate-700 text-sm">{namePlan}</h3>
+        <div className="mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-700">{namePlan}</h3>
         </div>
 
-        <div className="flex justify-between items-center text-slate-400 text-[11px] mb-4">
+        <div className="mb-4 flex items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-1">
             <span>
               {start.time} - {start.day}
@@ -76,17 +76,18 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onBook }) => {
         </div>
 
         <button
+          type="button"
           disabled={!isActive}
           onClick={() => onBook && onBook(plan.id)}
-          className={`w-full py-2.5 rounded-lg font-bold text-[10px] flex items-center justify-center gap-2 transition-all ${
+          className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[10px] font-bold transition-all ${
             isActive
-              ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-95"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              ? "bg-blue-600 !text-white shadow-sm hover:bg-blue-700 active:scale-95 [&_*]:!text-white"
+              : "cursor-not-allowed bg-slate-200 text-slate-400"
           }`}
         >
           ĐẶT VÉ
           <svg
-            className="w-3 h-3"
+            className="h-3 w-3"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
