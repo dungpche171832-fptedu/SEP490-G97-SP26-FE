@@ -38,4 +38,5 @@ export interface CreateRoutePayload {
   name: string;
   nameRevert: string;
   stations: CreateRouteStationPayload[];
+  reverseStations: CreateRouteStationPayload[];
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, Modal, Select, Spin, message } from "antd";
+import { Button, Form, Input, Modal, Select, message } from "antd";
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
   DeleteOutlined,
   PlusOutlined,
   SwapOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import type { CreateRoutePayload } from "@/model/route";
@@ -35,18 +37,8 @@ interface AddStationFormValues {
 
 const generateReverseRouteCode = (code: string): string => {
   const normalizedCode = code.trim().toUpperCase();
-
-  if (!normalizedCode) {
-    return "";
-  }
-
+  if (!normalizedCode) return "";
   return `${normalizedCode}_R`;
-};
-
-const getStationSubText = (station: RouteStationFormItem): string => {
-  const values = [station.stationCode, station.address, station.cityName].filter(Boolean);
-
-  return values.join(" • ");
 };
 
 export default function CreateRoutePage() {
@@ -55,9 +47,12 @@ export default function CreateRoutePage() {
   const [addStationForm] = Form.useForm<AddStationFormValues>();
 
   const [stations, setStations] = useState<RouteStationFormItem[]>([]);
+  const [reverseStations, setReverseStations] = useState<RouteStationFormItem[]>([]);
   const [stationOptions, setStationOptions] = useState<Station[]>([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loadingStations, setLoadingStations] = useState(false);
+  const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
   const codeValue = Form.useWatch("code", form);
@@ -65,13 +60,6 @@ export default function CreateRoutePage() {
   const reverseRouteCode = useMemo(() => {
     return generateReverseRouteCode(typeof codeValue === "string" ? codeValue : "");
   }, [codeValue]);
-
-  const reverseStations = useMemo(() => {
-    return [...stations].reverse().map((station, index) => ({
-      ...station,
-      order: index + 1,
-    }));
-  }, [stations]);
 
   const selectOptions = useMemo(() => {
     return stationOptions.map((station) => ({
@@ -83,90 +71,116 @@ export default function CreateRoutePage() {
   useEffect(() => {
     const fetchStations = async () => {
       try {
-        setLoadingStations(true);
-
         const response = await getStations();
         setStationOptions(response.stations);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Không thể tải danh sách điểm dừng";
-
-        message.error(errorMessage);
-      } finally {
-        setLoadingStations(false);
+      } catch {
+        message.error("Không thể tải danh sách điểm dừng");
       }
     };
-
     void fetchStations();
   }, []);
 
-  const handleOpenAddStationModal = () => {
-    addStationForm.resetFields();
-    setIsModalOpen(true);
-  };
+  // Logic: Tự động đảo ngược chiều đi sang chiều về khi Chiều Đi thay đổi
+  useEffect(() => {
+    const initialReverse = [...stations].reverse().map((station, index) => ({
+      ...station,
+      order: index + 1,
+    }));
+    setReverseStations(initialReverse);
+  }, [stations]);
 
   const handleAddStation = async () => {
-    let values: AddStationFormValues;
-
-    try {
-      values = await addStationForm.validateFields();
-    } catch {
+    const values = await addStationForm.validateFields();
+    const selectedStation = stationOptions.find((s) => s.id === values.stationId);
+    if (!selectedStation) return;
+    if (stations.some((s) => s.stationId === selectedStation.id)) {
+      message.error("Điểm dừng này đã tồn tại");
       return;
     }
-
-    const selectedStation = stationOptions.find((station) => station.id === values.stationId);
-
-    if (!selectedStation) {
-      message.error("Điểm dừng không hợp lệ");
-      return;
-    }
-
-    const isDuplicate = stations.some((station) => station.stationId === selectedStation.id);
-
-    if (isDuplicate) {
-      message.error("Điểm dừng này đã tồn tại trong tuyến");
-      return;
-    }
-
-    setStations((currentStations) => [
-      ...currentStations,
+    setStations((current) => [
+      ...current,
       {
         stationId: selectedStation.id,
         stationName: selectedStation.name,
         stationCode: selectedStation.code,
         address: selectedStation.address,
         cityName: selectedStation.cityName,
-        order: currentStations.length + 1,
+        order: current.length + 1,
       },
     ]);
-
-    addStationForm.resetFields();
     setIsModalOpen(false);
+    addStationForm.resetFields();
   };
 
   const handleRemoveStation = (stationId: number) => {
-    setStations((currentStations) =>
-      currentStations
-        .filter((station) => station.stationId !== stationId)
-        .map((station, index) => ({
-          ...station,
-          order: index + 1,
-        })),
+    setStations((current) =>
+      current
+        .filter((s) => s.stationId !== stationId)
+        .map((s, index) => ({ ...s, order: index + 1 })),
     );
+  };
+
+  const handleAddReverseStation = async () => {
+    const values = await addStationForm.validateFields();
+    const selectedStation = stationOptions.find((s) => s.id === values.stationId);
+    if (!selectedStation) return;
+    if (reverseStations.some((s) => s.stationId === selectedStation.id)) {
+      message.error("Điểm dừng này đã tồn tại trong chiều về");
+      return;
+    }
+
+    setReverseStations((current) => {
+      const newStations = [...current];
+      const lastIndex = newStations.length > 0 ? newStations.length - 1 : 0;
+      newStations.splice(lastIndex, 0, {
+        stationId: selectedStation.id,
+        stationName: selectedStation.name,
+        stationCode: selectedStation.code,
+        address: selectedStation.address,
+        cityName: selectedStation.cityName,
+        order: 0,
+      });
+      return newStations.map((s, index) => ({ ...s, order: index + 1 }));
+    });
+    setIsReverseModalOpen(false);
+    addStationForm.resetFields();
+  };
+
+  const handleRemoveReverseStation = (stationId: number, index: number) => {
+    if (index === 0 || index === reverseStations.length - 1) {
+      message.warning("Không thể xóa điểm đầu hoặc điểm cuối của lộ trình");
+      return;
+    }
+    setReverseStations((current) =>
+      current
+        .filter((s) => s.stationId !== stationId)
+        .map((s, index) => ({ ...s, order: index + 1 })),
+    );
+  };
+
+  const moveStation = (index: number, direction: "up" | "down") => {
+    const newStations = [...reverseStations];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (
+      targetIndex <= 0 ||
+      targetIndex >= newStations.length - 1 ||
+      index <= 0 ||
+      index >= newStations.length - 1
+    ) {
+      return;
+    }
+
+    [newStations[index], newStations[targetIndex]] = [newStations[targetIndex], newStations[index]];
+    setReverseStations(newStations.map((s, idx) => ({ ...s, order: idx + 1 })));
   };
 
   const handleSubmit = async () => {
     let values: CreateRouteFormValues;
-
     try {
       values = await form.validateFields();
     } catch {
-      message.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
-      return;
-    }
-
-    if (stations.length < 2) {
-      message.error("Cần ít nhất 2 điểm dừng để tạo tuyến");
+      message.error("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
@@ -174,23 +188,21 @@ export default function CreateRoutePage() {
       code: values.code.trim().toUpperCase(),
       name: values.name.trim(),
       nameRevert: values.nameRevert.trim(),
-      stations: stations.map((station, index) => ({
-        stationId: station.stationId,
-        order: index + 1,
+      stations: stations.map((s, idx) => ({ stationId: s.stationId, order: idx + 1 })),
+      reverseStations: reverseStations.map((s, idx) => ({
+        stationId: s.stationId,
+        order: idx + 1,
       })),
     };
 
     try {
       setSubmitting(true);
-
       await createRoute(payload);
-
       message.success("Tạo tuyến đường thành công");
       router.push("/admin/manageRoute");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Không thể tạo tuyến đường";
-
-      message.error(errorMessage);
+      const errorMsg = error instanceof Error ? error.message : "Lỗi tạo tuyến";
+      message.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -204,26 +216,18 @@ export default function CreateRoutePage() {
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => router.push("/admin/manageRoute")}
-              style={{
-                borderColor: "#1267db",
-                color: "#1267db",
-              }}
-              className="mb-4 h-10 rounded-lg border-2 bg-white px-5 font-semibold shadow-none hover:!border-[#1267db] hover:!text-[#1267db]"
+              className="mb-4 h-10 rounded-lg border-2 border-[#1267db] text-[#1267db] font-semibold bg-white shadow-none"
             >
               Quay lại
             </Button>
-
-            <h1 className="m-0 text-[38px] font-extrabold leading-tight text-[#10182f]">
-              Tạo Tuyến Đường Mới
-            </h1>
+            <h1 className="m-0 text-[38px] font-extrabold text-[#10182f]">Tạo Tuyến Đường Mới</h1>
           </div>
-
           <Button
             type="primary"
             icon={<CheckCircleOutlined />}
             loading={submitting}
             onClick={() => void handleSubmit()}
-            className="h-12 min-w-[240px] rounded-lg bg-[#1267db] px-8 text-sm font-bold shadow-[0_10px_24px_rgba(18,103,219,0.25)]"
+            className="h-12 min-w-[240px] rounded-lg bg-[#1267db] font-bold shadow-lg"
           >
             Tạo Tuyến
           </Button>
@@ -231,149 +235,102 @@ export default function CreateRoutePage() {
 
         <Form form={form} layout="vertical" requiredMark={false}>
           <div className="grid grid-cols-1 gap-11 xl:grid-cols-2">
-            <section className="rounded-[30px] border-l-[7px] border-[#1267db] bg-white p-11 shadow-[0_22px_55px_rgba(15,23,42,0.06)]">
+            {/* CHIỀU ĐI */}
+            <section className="rounded-[30px] border-l-[7px] border-[#1267db] bg-white p-11 shadow-sm">
               <div className="mb-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <span className="text-3xl">🚌</span>
                   <h2 className="m-0 text-[30px] font-extrabold text-[#202431]">Chiều Đi</h2>
                 </div>
-
-                <span className="rounded-full bg-[#eef4ff] px-6 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#1267db]">
+                <span className="rounded-full bg-[#eef4ff] px-6 py-2 text-xs font-extrabold text-[#1267db] uppercase">
                   Bắt buộc
                 </span>
               </div>
-
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Form.Item
                   label={
-                    <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#9aabc4]">
-                      <span className="text-red-500">*</span> Mã tuyến
+                    <span className="text-xs font-extrabold uppercase text-[#9aabc4]">
+                      Mã tuyến
                     </span>
                   }
                   name="code"
-                  rules={[{ required: true, message: "Vui lòng nhập mã tuyến" }]}
+                  rules={[{ required: true }]}
                 >
                   <Input
                     placeholder="HN-HP-01"
-                    className="h-16 rounded-2xl border-none bg-[#f5f7fb] px-5 text-lg font-bold text-[#1f2430]"
+                    className="h-16 rounded-2xl bg-[#f5f7fb] border-none text-lg font-bold"
                   />
                 </Form.Item>
-
                 <Form.Item
                   label={
-                    <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#9aabc4]">
-                      <span className="text-red-500">*</span> Tên tuyến
+                    <span className="text-xs font-extrabold uppercase text-[#9aabc4]">
+                      Tên tuyến
                     </span>
                   }
                   name="name"
-                  rules={[{ required: true, message: "Vui lòng nhập tên tuyến" }]}
+                  rules={[{ required: true }]}
                 >
                   <Input
                     placeholder="Hà Nội - Hải Phòng"
-                    className="h-16 rounded-2xl border-none bg-[#f5f7fb] px-5 text-lg font-bold text-[#1f2430]"
+                    className="h-16 rounded-2xl bg-[#f5f7fb] border-none text-lg font-bold"
                   />
                 </Form.Item>
               </div>
-
               <div className="mb-5 mt-8 flex items-center justify-between">
-                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#9aabc4]">
+                <p className="m-0 text-xs font-extrabold text-[#9aabc4] uppercase">
                   Danh sách điểm dừng
                 </p>
-
                 <button
                   type="button"
-                  onClick={handleOpenAddStationModal}
-                  className="inline-flex items-center gap-2 text-sm font-extrabold text-[#1267db]"
+                  onClick={() => {
+                    addStationForm.resetFields();
+                    setIsModalOpen(true);
+                  }}
+                  className="text-[#1267db] font-extrabold flex items-center gap-2"
                 >
-                  <PlusOutlined />
-                  Thêm điểm
+                  <PlusOutlined /> Thêm điểm
                 </button>
               </div>
-
               <div className="space-y-4">
-                {stations.length === 0 ? (
-                  <div className="rounded-2xl bg-[#f5f7fb] px-5 py-8 text-center text-sm font-semibold text-[#8a9bb6]">
-                    Chưa có điểm dừng nào
+                {stations.map((station) => (
+                  <div
+                    key={station.stationId}
+                    className="flex items-center gap-4 rounded-2xl bg-[#f1f3f7] px-4 py-3"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1267db] text-white font-bold">
+                      {station.order}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="m-0 truncate font-extrabold text-[#202431]">
+                        {station.stationName}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStation(station.stationId)}
+                      className="text-[#94a3b8] hover:text-red-500"
+                    >
+                      <DeleteOutlined />
+                    </button>
                   </div>
-                ) : (
-                  stations.map((station) => (
-                    <div
-                      key={station.stationId}
-                      className="flex min-h-16 items-center gap-4 rounded-2xl bg-[#f1f3f7] px-4 py-3"
-                    >
-                      <div className="grid gap-[4px] text-[#cbd5e1]">
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                      </div>
-
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1267db] text-sm font-extrabold text-white">
-                        {station.order}
-                      </span>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="m-0 truncate text-lg font-extrabold text-[#202431]">
-                          {station.stationName}
-                        </p>
-
-                        {getStationSubText(station) && (
-                          <p className="m-0 mt-1 truncate text-xs font-medium text-[#8a9bb6]">
-                            {getStationSubText(station)}
-                          </p>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStation(station.stationId)}
-                        className="text-[#94a3b8] transition hover:text-red-500"
-                      >
-                        <DeleteOutlined />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="mt-10 border-t border-[#edf2f7] pt-7">
-                <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.16em] text-[#9aabc4]">
-                  Xem trước lộ trình
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  {stations.map((station, index) => (
-                    <div
-                      key={`preview-out-${station.stationId}`}
-                      className="flex items-center gap-3"
-                    >
-                      <span
-                        className={`h-3 w-3 rounded-full ${
-                          index === 0 ? "bg-[#1267db]" : "bg-[#9ac3ea]"
-                        }`}
-                      />
-
-                      {index < stations.length - 1 && (
-                        <span className="h-[2px] w-10 bg-[#cfe1f2]" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
             </section>
 
-            <section className="rounded-[30px] border-l-[7px] border-[#16a765] bg-[#eef8f5] p-11 shadow-[0_22px_55px_rgba(15,23,42,0.04)]">
-              <div className="mb-10 flex items-center gap-4">
-                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#0f6ebd] text-lg text-white">
-                  <SwapOutlined />
-                </span>
-
-                <h2 className="m-0 text-[30px] font-extrabold text-[#202431]">Chiều Về</h2>
+            {/* CHIỀU VỀ */}
+            <section className="rounded-[30px] border-l-[7px] border-[#16a765] bg-[#eef8f5] p-11 shadow-sm">
+              <div className="mb-10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#0f6ebd] text-white">
+                    <SwapOutlined />
+                  </span>
+                  <h2 className="m-0 text-[30px] font-extrabold text-[#202431]">Chiều Về</h2>
+                </div>
               </div>
-
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Form.Item
                   label={
-                    <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#9aabc4]">
+                    <span className="text-xs font-extrabold text-[#9aabc4] uppercase">
                       Mã tuyến về
                     </span>
                   }
@@ -381,99 +338,92 @@ export default function CreateRoutePage() {
                   <Input
                     readOnly
                     value={reverseRouteCode}
-                    placeholder="Không bắt buộc"
-                    className="h-16 rounded-2xl border-none bg-white px-5 text-lg font-bold text-[#1f2430]"
+                    className="h-16 rounded-2xl bg-white border-none text-lg font-bold"
                   />
                 </Form.Item>
-
                 <Form.Item
                   label={
-                    <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#9aabc4]">
-                      <span className="text-red-500">*</span> Tên tuyến về
+                    <span className="text-xs font-extrabold text-[#9aabc4] uppercase">
+                      Tên tuyến về
                     </span>
                   }
                   name="nameRevert"
-                  rules={[{ required: true, message: "Vui lòng nhập tên tuyến về" }]}
+                  rules={[{ required: true }]}
                 >
                   <Input
                     placeholder="Hải Phòng - Hà Nội"
-                    className="h-16 rounded-2xl border-none bg-white px-5 text-lg font-bold text-[#1f2430]"
+                    className="h-16 rounded-2xl bg-white border-none text-lg font-bold"
                   />
                 </Form.Item>
               </div>
-
-              <div className="mb-5 mt-8">
-                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.16em] text-[#9aabc4]">
-                  Danh sách điểm dừng
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {reverseStations.length === 0 ? (
-                  <div className="rounded-2xl bg-white/80 px-5 py-8 text-center text-sm font-semibold text-[#8a9bb6]"></div>
-                ) : (
-                  reverseStations.map((station) => (
+              <div className="space-y-4 mt-8">
+                <div className="mb-5 mt-8 flex items-center justify-between">
+                  <p className="m-0 text-xs font-extrabold text-[#9aabc4] uppercase">
+                    Danh sách điểm dừng
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addStationForm.resetFields();
+                      setIsReverseModalOpen(true);
+                    }}
+                    className="text-[#16a765] font-extrabold flex items-center gap-2"
+                  >
+                    <PlusOutlined /> Thêm điểm trung gian
+                  </button>
+                </div>
+                {reverseStations.map((station, index) => {
+                  const isFirstOrLast = index === 0 || index === reverseStations.length - 1;
+                  return (
                     <div
-                      key={`reverse-${station.stationId}`}
-                      className="flex min-h-16 items-center gap-4 rounded-2xl bg-white/80 px-4 py-3"
-                    >
-                      <div className="grid gap-[4px] text-[#d9e6e2]">
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                        <span className="h-1 w-1 rounded-full bg-current" />
-                      </div>
-
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#16a765] text-sm font-extrabold text-white">
-                        {station.order}
-                      </span>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="m-0 truncate text-lg font-extrabold text-[#202431]">
-                          {station.stationName}
-                        </p>
-
-                        {getStationSubText(station) && (
-                          <p className="m-0 mt-1 truncate text-xs font-medium text-[#7aa99a]">
-                            {getStationSubText(station)}
-                          </p>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStation(station.stationId)}
-                        className="text-[#9abdaf] transition hover:text-red-500"
-                      >
-                        <DeleteOutlined />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="mt-10 border-t border-[#d5e8e1] pt-7">
-                <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.16em] text-[#9aabc4]">
-                  Xem trước lộ trình ngược
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  {reverseStations.map((station, index) => (
-                    <div
-                      key={`preview-back-${station.stationId}`}
-                      className="flex items-center gap-3"
+                      key={`rev-${station.stationId}-${index}`}
+                      className={`flex items-center gap-4 rounded-2xl px-4 py-3 ${isFirstOrLast ? "bg-[#d1e7dd] border border-[#16a765]" : "bg-white/80"}`}
                     >
                       <span
-                        className={`h-3 w-3 rounded-full ${
-                          index === 0 ? "bg-[#16a765]" : "bg-[#94d6b3]"
-                        }`}
-                      />
-
-                      {index < reverseStations.length - 1 && (
-                        <span className="h-[2px] w-10 bg-[#bde8d1]" />
+                        className={`flex h-9 w-9 items-center justify-center rounded-full font-bold text-white ${isFirstOrLast ? "bg-[#16a765]" : "bg-[#94d6b3]"}`}
+                      >
+                        {station.order}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="m-0 truncate font-extrabold text-[#202431]">
+                          {station.stationName}
+                        </p>
+                        {isFirstOrLast && (
+                          <span className="text-[10px] text-[#16a765] font-bold uppercase">
+                            Cố định
+                          </span>
+                        )}
+                      </div>
+                      {!isFirstOrLast && (
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => moveStation(index, "up")}
+                            disabled={index === 1}
+                            className="text-[#16a765] disabled:opacity-30"
+                          >
+                            <ArrowUpOutlined />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveStation(index, "down")}
+                            disabled={index === reverseStations.length - 2}
+                            className="text-[#16a765] disabled:opacity-30"
+                          >
+                            <ArrowDownOutlined />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReverseStation(station.stationId, index)}
+                            className="text-[#9abdaf] hover:text-red-500"
+                          >
+                            <DeleteOutlined />
+                          </button>
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -485,26 +435,29 @@ export default function CreateRoutePage() {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={() => void handleAddStation()}
-        okText="Thêm điểm"
-        cancelText="Hủy"
-        okButtonProps={{
-          className: "bg-[#1267db]",
-        }}
+        okButtonProps={{ className: "bg-[#1267db]" }}
+      >
+        <Form form={addStationForm} layout="vertical">
+          <Form.Item label="Chọn điểm dừng" name="stationId" rules={[{ required: true }]}>
+            <Select showSearch options={selectOptions} optionFilterProp="label" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Thêm trạm trung gian Chiều Về"
+        open={isReverseModalOpen}
+        onCancel={() => setIsReverseModalOpen(false)}
+        onOk={() => void handleAddReverseStation()}
+        okButtonProps={{ className: "bg-[#16a765]" }}
       >
         <Form form={addStationForm} layout="vertical">
           <Form.Item
-            label="Chọn điểm dừng"
+            label="Chọn điểm dừng trung gian"
             name="stationId"
-            rules={[{ required: true, message: "Vui lòng chọn điểm dừng" }]}
+            rules={[{ required: true }]}
           >
-            <Select
-              showSearch
-              loading={loadingStations}
-              placeholder="Chọn điểm dừng từ danh sách"
-              optionFilterProp="label"
-              options={selectOptions}
-              notFoundContent={loadingStations ? <Spin size="small" /> : "Không có điểm dừng"}
-            />
+            <Select showSearch options={selectOptions} optionFilterProp="label" />
           </Form.Item>
         </Form>
       </Modal>

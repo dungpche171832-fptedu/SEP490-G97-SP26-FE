@@ -265,7 +265,7 @@ export default function HomePage() {
                         <div
                           className="flex h-[380px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-md"
                           onClick={() => {
-                            router.push(`/news/${news.id}`);
+                            router.push(`/home/news/${news.id}`);
                           }}
                         >
                           <div className="relative h-48 overflow-hidden">
